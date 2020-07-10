@@ -117,8 +117,8 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
         ROS_INFO(" In KimeraCB dt %f ",dt);
 	tf::Vector3 integratedPosition;
-
-	integratedPosition = currentPosition + vn_imu*dt;
+	tf::Vector3 v_clamp(1.0,1.0,.1);
+	integratedPosition = currentPosition + v_clamp*vn_imu*dt;
 
 	// populate the odom message and publish
 	
