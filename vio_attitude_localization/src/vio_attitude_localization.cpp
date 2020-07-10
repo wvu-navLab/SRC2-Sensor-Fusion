@@ -39,6 +39,17 @@ void VIOAttitudeLocalization::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg
 	rollInc_ = rollInc_ + roll;
 	pitchInc_ = pitchInc_ + pitch;
 	incCounter_ = incCounter_ + 1.0;
+	if(incCounter_ > 1.0){
+		// if there has been a roll over
+		double yawAvg=(yawInc_/(incCounter_-1.0));
+		if (fabs( yaw - yawAvg)>3.14){
+			std::cout << "Roll Over Detected " << yaw << " " << yawAvg << std::endl;
+			if( yaw < yawAvg ) yaw = yaw +6.2831185;
+			else yaw = yaw - 6.2831185;
+		}
+	}
+
+
 	yawInc_ = yawInc_ + yaw;
 	firstIMU_=false;
 //	ROS_INFO("RPY %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
