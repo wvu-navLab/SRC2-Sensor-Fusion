@@ -146,7 +146,11 @@ include_directories(
 
 add_executable(vio_attitude_localization src/vio_attitude_localization.cpp)
 target_link_libraries(vio_attitude_localization ${catkin_LIBRARIES})
-# add_dependencies(waypoint_nav waypoint_nav_generate_messages_cpp)
+# add_dependencies(waypoint_nav vio_attitude_localization_generate_messages_cpp)
+
+add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
+target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
+# add_dependencies(kf_attitude_gyro vio_attitude_localization_generate_messages_cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
