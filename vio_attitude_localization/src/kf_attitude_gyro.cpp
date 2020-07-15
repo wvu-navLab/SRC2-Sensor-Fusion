@@ -29,9 +29,11 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
             
 	subImu = nh_.subscribe("/scout_1/imu",10,&KFAttitudeGyro::imuCallback,this);
 
-    pubRoll = nh_.advertise<std_msgs::Float64>("/scout_1/imu_processed/roll",1);
-    pubPitch = nh_.advertise<std_msgs::Float64>("/scout_1/imu_processed/pitch",1);
-    pubYaw = nh_.advertise<std_msgs::Float64>("/scout_1/imu_processed/yaw",1);
+    pubRoll = nh_.advertise<std_msgs::Float64>("/scout_1/attitude/roll",1);
+    pubPitch = nh_.advertise<std_msgs::Float64>("/scout_1/attitude/pitch",1);
+    pubYaw = nh_.advertise<std_msgs::Float64>("/scout_1/attitude/yaw",1);
+    pubOdom = nh_.advertise<nav_msgs::Odometry>("/scout_1/kf_gyro_attitude/odometry",1);
+
 }
 
 
@@ -71,45 +73,58 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 
     Eigen::Matrix <double, 3, 1> angular_rates;
 	angular_rates = Cib*omega; 
-   
+ 
+    // Non-linear update of state vector
+    x_(0) = x_(0) + angular_rates(0) * dt_;
+    x_(1) = x_(1) + angular_rates(1) * dt_;
+    x_(2) = x_(2) + angular_rates(2) * dt_;
+
+    // Jacobian wrt to state vector
     Eigen::Matrix <double, 6, 6> F = Eigen::MatrixXd::Zero(6,6);
-    F(0,0) = 1 + (cos(x_(0))*tan(x_(1))*p_til + sin(x_(0))*tan(x_(1))*r_til) * dt_;
-    F(0,1) = (sin(x_(0))/cos(x_(1))/cos(x_(1))*p_til - cos(x_(0))/cos(x_(1))/cos(x_(1))*r_til) * dt_;
-    F(0,3) = (-sin(x_(0))*tan(x_(1))) * dt_;
-    F(0,4) = dt_;
-    F(0,5) = (cos(x_(0))*tan(x_(1))) * dt_;
+    F(0,0) = 1 + (cos(x_(0))*tan(x_(1))*q_til - sin(x_(0))*tan(x_(1))*r_til) * dt_;
+    F(0,1) = (sin(x_(0))/cos(x_(1))/cos(x_(1))*q_til + cos(x_(0))/cos(x_(1))/cos(x_(1))*r_til) * dt_;
+    F(0,3) = - dt_;
+    F(0,4) = (- sin(x_(0))*tan(x_(0))) * dt_;
+    F(0,5) = (- cos(x_(0))*tan(x_(0))) * dt_;
 
-    F(1,0) = (-sin(x_(0))*p_til + cos(x_(0))*r_til) * dt_;
+    F(1,0) = (sin(x_(0))*q_til + cos(x_(0))*r_til) * dt_;
 	F(1,1) = 1;
-    F(1,3) = (-cos(x_(0))) * dt_;
-    F(1,5) = (-sin(x_(0))) * dt_;
+    F(1,4) = (- cos(x_(0))) * dt_;
+    F(1,5) = (sin(x_(0))) * dt_;
 
-    F(2,0) = (cos(x_(0))/cos(x_(1))*p_til + sin(x_(0))/cos(x_(1))*r_til) * dt_;
-    F(2,1) = (sin(x_(0))*tan(x_(1))/cos(x_(1))*p_til - cos(x_(0))*tan(x_(1))/cos(x_(1))*r_til) * dt_;
+    F(2,0) = (cos(x_(0))/cos(x_(1))*q_til - sin(x_(0))/cos(x_(1))*r_til) * dt_;
+    F(2,1) = (sin(x_(0))*tan(x_(1))/cos(x_(1))*q_til + cos(x_(0))*tan(x_(1))/cos(x_(1))*r_til) * dt_;
     F(2,2) = 1;
-    F(2,3) = (sin(x_(0))/cos(x_(1))) * dt_;
-    F(2,5) = (sin(x_(0))/cos(x_(1))) * dt_;
+    F(2,3) = (- sin(x_(0))/cos(x_(1))) * dt_;
+    F(2,5) = (- cos(x_(0))/cos(x_(1))) * dt_;
 
     F(3,3) = 1;
     F(4,4) = 1;
     F(5,5) = 1;
 
-    // State Prediction
-    x_(0) = x_(0) + angular_rates(0) * dt_;
-    x_(1) = x_(1) + angular_rates(1) * dt_;
-    x_(2) = x_(2) + angular_rates(2) * dt_;
+    // Jacobian wrt to input vector
+    // Jacobian wrt to state vector
+    Eigen::Matrix <double, 6, 6> G = Eigen::MatrixXd::Zero(6,3);
+    G(0,0) = dt_;
+    G(0,1) = (sin(x_(0))*tan(x_(0))) * dt_;
+    G(0,2) = (cos(x_(0))*tan(x_(0))) * dt_;
+
+    G(1,0) = 0;
+    G(1,1) = (cos(x_(0))) * dt_;
+    G(1,2) = (- sin(x_(0))) * dt_;   
+
+    G(2,0) = 0;
+    G(2,1) = (sin(x_(0))/cos(x_(1))) * dt_;
+    G(2,2) = (cos(x_(0))/cos(x_(1))) * dt_;
 
 	double sigma_attitude = 0.05;
     Eigen::Matrix <double, 6, 6> Q;
-    Q   <<  pow(sigma_attitude,2), 0, 0, 0, 0, 0,
-            0, pow(sigma_attitude,2), 0, 0, 0, 0,
-            0, 0, pow(sigma_attitude,2), 0, 0, 0,
-            0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0;
+    Q   <<  pow(sigma_attitude,2), 0, 0,
+            0, pow(sigma_attitude,2), 0,
+            0, 0, pow(sigma_attitude,2);
 
     // Covariance Prediction
-    P_ = F * P_ * F.transpose() + Q;
+    P_ = F * P_ * F.transpose() + G * Q * G.transpose();
 
     Eigen::Matrix <double, 3, 6> H;
     H   <<  1, 0, 0, 0, 0, 0,
@@ -141,6 +156,28 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 
     // Covariance Update
     P_ = (Eigen::MatrixXd::Identity(6,6) - K * H) * P_;
+
+
+    // Populate the odom message and publish
+	nav_msgs::Odometry updatedOdom;
+
+	updatedOdom.header.stamp = msg->header.stamp;
+	updatedOdom.header.frame_id = "/scout_1_tf/odom";
+	updatedOdom.child_frame_id = "/scout_1_tf/base_footprint";
+	
+	tf::Quaternion q_update;
+    q_update.setRPY(x_(0),x_(1),x_(2));
+	q_update.normalize();
+
+    ROS_INFO("RPY KF GYRO+ATTITUDE %f  %f  %f\n",x_(0)*180.0/3.14,x_(1)*180.0/3.14,x_(2)*180.0/3.14);
+
+	updatedOdom.pose.pose.orientation.x = q_update.x();
+	updatedOdom.pose.pose.orientation.y = q_update.y();
+	updatedOdom.pose.pose.orientation.z = q_update.z();
+	updatedOdom.pose.pose.orientation.w = q_update.w();
+
+	pubOdom.publish(updatedOdom);
+
 }
 
 int main(int argc, char **argv)

@@ -33,6 +33,7 @@
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
+#include <nav_msgs/Odometry.h>
 
 class KFAttitudeGyro
 {
@@ -51,6 +52,7 @@ private:
     ros::Publisher pubRoll;
     ros::Publisher pubPitch;
     ros::Publisher pubYaw;
+    ros::Publisher pubOdom;
     
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;
