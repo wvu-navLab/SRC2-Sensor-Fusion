@@ -46,26 +46,26 @@ private:
     ros::NodeHandle & nh_;
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
-    void odometryTruthCallback(const nav_msgs::Odometry::ConstPtr &msg);
+    void odometryCallback(const nav_msgs::Odometry::ConstPtr &msg);
     void publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub);
     void publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub);
 
     ros::Subscriber subImu;
-    ros::Subscriber subOdomTruth;
-
-    ros::Publisher pubRollTruth;
-    ros::Publisher pubPitchTruth;
-    ros::Publisher pubYawTruth;
+    ros::Subscriber subOdom;
 
     ros::Publisher pubRollMeasured;
     ros::Publisher pubPitchMeasured;
     ros::Publisher pubYawMeasured;
+    ros::Publisher pubOdomRoll;
+    ros::Publisher pubOdomPitch;
+    ros::Publisher pubOdomYaw;
 
     ros::Publisher pubRollEstimated;
     ros::Publisher pubPitchEstimated;
     ros::Publisher pubYawEstimated;
-    
-    ros::Publisher pubBiasesEstimated;  
+    ros::Publisher pubBiasesEstimated;
+
+    ros::Publisher pubImuFiltered;    
 
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;

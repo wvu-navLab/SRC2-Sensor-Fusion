@@ -35,11 +35,11 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
             0, 0, 0, 0, 0, pow(sigma_biases,2);
          
 	subImu = nh_.subscribe("imu",10,&KFAttitudeGyro::imuCallback,this);
-    subOdomTruth = nh_.subscribe("odometry/truth", 1000, &KFAttitudeGyro::odometryTruthCallback, this);
+    subOdom = nh_.subscribe("odometry/truth", 1000, &KFAttitudeGyro::odometryCallback, this);
 
-    pubRollTruth = nh_.advertise<geometry_msgs::PointStamped>("attitude/truth/roll",1);
-    pubPitchTruth = nh_.advertise<geometry_msgs::PointStamped>("attitude/truth/pitch",1);
-    pubYawTruth = nh_.advertise<geometry_msgs::PointStamped>("attitude/truth/yaw",1);
+    pubOdomRoll = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/roll",1);
+    pubOdomPitch = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/pitch",1);
+    pubOdomYaw = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/yaw",1);
 
     pubRollMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/roll",1);
     pubPitchMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/pitch",1);
@@ -50,16 +50,18 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
     pubYawEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/yaw",1);
 
     pubBiasesEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/gyro_biases",1);
+    
+    pubImuFiltered = nh_.advertise<sensor_msgs::Imu>("imu_filtered",1);
 
     last_time_ = time_now.toSec();
 
 }
 
-void KFAttitudeGyro::odometryTruthCallback(const nav_msgs::Odometry::ConstPtr &msg)
+void KFAttitudeGyro::odometryCallback(const nav_msgs::Odometry::ConstPtr &msg)
 {
     ros::Time time_now = msg->header.stamp;
 
-	double roll_truth, pitch_truth, yaw_truth;
+	double roll_odom, pitch_odom, yaw_odom;
     tf::Quaternion q(
                     msg->pose.pose.orientation.x,
                     msg->pose.pose.orientation.y,
@@ -68,11 +70,11 @@ void KFAttitudeGyro::odometryTruthCallback(const nav_msgs::Odometry::ConstPtr &m
                     );
 
     tf::Matrix3x3 m(q);
-    m.getRPY(roll_truth, pitch_truth, yaw_truth);
+    m.getRPY(roll_odom, pitch_odom, yaw_odom);
 
-    publishStates(roll_truth, 0, time_now,  pubRollTruth);
-    publishStates(pitch_truth, 0, time_now,  pubPitchTruth);
-    publishStates(yaw_truth, 0, time_now,  pubYawTruth);
+    publishStates(roll_odom, 0, time_now,  pubOdomRoll);
+    publishStates(pitch_odom, 0, time_now,  pubOdomPitch);
+    publishStates(yaw_odom, 0, time_now,  pubOdomYaw);
 }
 
 
@@ -125,7 +127,6 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
         {
             yaw = yaw + 2 * M_PI;
         }
-        ROS_INFO_STREAM_ONCE("Funciona4");
     }
  
     // Non-linear update of state vector
@@ -224,7 +225,6 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     // Yaw wrapper
     if (fabs(x_(2)) > M_PI)
     {
-        std::cout << "Roll Over Detected" << std::endl;
         if(x_(2) > 0) 
         {
             x_(2) = x_(2) - 2*M_PI;
@@ -248,6 +248,22 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     publishBiases(x_(3), x_(4), x_(5), time_now,  pubBiasesEstimated);
 
     last_time_ = time_now.toSec();
+
+    sensor_msgs::Imu new_msg = *msg;
+
+    tf::Quaternion new_q;
+    new_q.setRPY(x_(0),x_(1),x_(2));
+    new_q.normalize();
+
+    new_msg.orientation.x = new_q.x();
+    new_msg.orientation.y = new_q.y();
+    new_msg.orientation.z = new_q.z();
+    new_msg.orientation.w = new_q.w(); 
+
+    new_msg.orientation_covariance = {  P_(0,0), P_(0,1), P_(0,2),
+                                        P_(1,0), P_(1,1), P_(1,2),
+                                        P_(2,0), P_(2,1), P_(3,2),};
+    pubImuFiltered.publish(new_msg);
 }
 
 // Publish estimated states in global frame
