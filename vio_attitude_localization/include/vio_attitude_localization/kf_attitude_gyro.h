@@ -32,7 +32,7 @@
 // Custom message includes. Auto-generated from msg/ directory.
 #include <std_msgs/Float64.h>
 #include <sensor_msgs/Imu.h>
-#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Odometry.h>
 
 class KFAttitudeGyro
@@ -46,18 +46,32 @@ private:
     ros::NodeHandle & nh_;
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+    void odometryTruthCallback(const nav_msgs::Odometry::ConstPtr &msg);
+    void publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub);
+    void publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub);
 
     ros::Subscriber subImu;
+    ros::Subscriber subOdomTruth;
 
-    ros::Publisher pubRoll;
-    ros::Publisher pubPitch;
-    ros::Publisher pubYaw;
-    ros::Publisher pubOdom;
+    ros::Publisher pubRollTruth;
+    ros::Publisher pubPitchTruth;
+    ros::Publisher pubYawTruth;
+
+    ros::Publisher pubRollMeasured;
+    ros::Publisher pubPitchMeasured;
+    ros::Publisher pubYawMeasured;
+
+    ros::Publisher pubRollEstimated;
+    ros::Publisher pubPitchEstimated;
+    ros::Publisher pubYawEstimated;
     
+    ros::Publisher pubBiasesEstimated;  
+
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;
 
     double dt_;
+    double last_time_;
  };
 
 #endif //KF_ATTITUDE_GYRO_H
