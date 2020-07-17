@@ -16,9 +16,10 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
 	dt_ = 0.2;
     ros::Time time_now = ros::Time::now();
 
-    double sigma_rp = 0.2;
-    double sigma_y = 1.5;
-    double sigma_biases = 0.1;
+    firstIMUCallback_=true;
+    double sigma_rp = 0.1;
+    double sigma_y = 0.1;
+    double sigma_biases = 0.05;
         
     x_  <<  0, 
             0, 
@@ -98,6 +99,12 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
 
+    if(firstIMUCallback_){
+	    x_[0] = roll;
+	    x_[1] = pitch;
+	    x_[2] = yaw;
+	    firstIMUCallback_=false;
+    }
     double p_til, q_til, r_til;
     p_til = msg->angular_velocity.x - x_[3];
     q_til = msg->angular_velocity.y - x_[4];

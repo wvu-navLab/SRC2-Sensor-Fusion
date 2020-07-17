@@ -14,7 +14,7 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 
 	subKimera_=nh_.subscribe("/kimera_vio_ros/odometry",1, &VIOAttitudeLocalization::kimeraCallback_, this);
 
-	subImu_ = nh_.subscribe("/scout_1/imu",10,&VIOAttitudeLocalization::imuCallback_,this);
+	subImu_ = nh_.subscribe("/scout_1/imu_filtered",10,&VIOAttitudeLocalization::imuCallback_,this);
 
 	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("/scout_1/vio_attitude/odometry",1);
 }
@@ -117,7 +117,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
         ROS_INFO(" In KimeraCB dt %f ",dt);
 	tf::Vector3 integratedPosition;
-	tf::Vector3 v_clamp(1.0,1.0,.1);
+	tf::Vector3 v_clamp(1.0,1.0,1.0);
 	integratedPosition = currentPosition + v_clamp*vn_imu*dt;
 
 	// populate the odom message and publish

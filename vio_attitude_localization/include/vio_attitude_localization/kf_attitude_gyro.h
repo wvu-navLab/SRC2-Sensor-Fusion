@@ -72,6 +72,7 @@ private:
 
     double dt_;
     double last_time_;
+    bool firstIMUCallback_;
  };
 
 #endif //KF_ATTITUDE_GYRO_H
