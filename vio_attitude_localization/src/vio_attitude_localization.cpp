@@ -21,7 +21,7 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("/scout_1/vio_attitude/odometry",1);
 
 	double sigVel = .1;
-	double sigPos = .001;
+	double sigPos = .01;
 	Q_ << pow(sigPos,2), 0, 0, 0, 0, 0,
 	      0, pow(sigPos,2), 0, 0, 0, 0,
 	      0, 0, pow(sigPos,2), 0, 0, 0,
@@ -31,16 +31,17 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 	
 	P_ = Q_;
 
-	Hvio_ << 0, 0, 0, 1, 0, 0,
+	Hodom_ <<  0, 0, 0, 1, 0, 0,
 	          0, 0, 0, 0, 1, 0,
 		  0, 0, 0, 0, 0, 1;
 
 
 
-	double sigWO = .1;
-	double sigVIO = .1;
-	Rwo_ << pow(sigWO,2), 0,
-	        0, pow(sigWO,2);
+	double sigWO = .05;
+	double sigVIO = .05;
+	Rwo_ << pow(sigWO,2), 0, 0,
+	        0, pow(sigWO,2), 0,
+                0, 0, pow(sigWO,2);
 		
 
 	Rvio_ << pow(sigVIO,2), 0, 0,
@@ -96,6 +97,101 @@ void VIOAttitudeLocalization::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg
 
 void VIOAttitudeLocalization::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
+
+	R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
+        rollInc_=0.0;
+        pitchInc_=0.0;
+        yawInc_=0.0;
+        incCounter_=0.0;
+
+
+	Rbn_=R_imu_nav_o_*R_body_imu_;
+
+	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
+	
+	// state predicition
+        F_(0,3) = dt;
+        F_(1,4) = dt;
+        F_(2,5) = dt;
+
+        x_ = F_*x_;
+        P_ = F_*P_*F_.transpose()+ Q_;
+
+
+
+
+
+	double roll, pitch, yaw;
+        Rbn_.getRPY(roll,pitch,yaw);
+        if((pitch*180/3.1414926) > 8){
+                ROS_INFO("Skipping Wheel Odom Update due to High Pitch %f ",pitch*180/3.1414926);
+        }else{
+
+
+	tf::Vector3 vb_wo( msg->twist.twist.linear.x,
+                               msg->twist.twist.linear.y,
+                               msg->twist.twist.linear.z);
+
+
+
+
+        // rotate kimeta body axis velocity into the nav frame
+        tf::Vector3 vn_wo;
+        vn_wo = Rbn_*vb_wo;
+
+
+
+	// kimera measurement update
+        zWO_(0,0)= vn_wo.x();
+        zWO_(1,0)= vn_wo.y();
+        zWO_(2,0)= vn_wo.z();
+        Eigen::MatrixXd S(3,3);
+        S = Rwo_ + Hodom_*P_*Hodom_.transpose();
+
+        Eigen::MatrixXd K(6,3);
+        K = (P_*Hodom_.transpose())*S.inverse();
+        Eigen::MatrixXd I(6,6);
+        I.setIdentity();
+        P_ =(I-K*Hodom_)*P_;
+        x_ = x_ + K*(zWO_ - Hodom_*x_);
+
+	}
+
+	nav_msgs::Odometry updatedOdom;
+
+        updatedOdom.header.stamp = msg->header.stamp;
+        updatedOdom.header.frame_id = "/scout_1_tf/odom";
+        updatedOdom.child_frame_id = "/scout_1_tf/base_footprint";
+
+        tf::Quaternion qup;
+        qup.normalize();
+        Rbn_.getRotation(qup);
+
+
+
+        Rbn_.getRPY(roll,pitch,yaw);
+        ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
+        ROS_INFO_STREAM(" state x: " << x_.transpose() );
+        updatedOdom.pose.pose.position.x = x_(0);
+        updatedOdom.pose.pose.position.y = x_(1);
+        updatedOdom.pose.pose.position.z = x_(2);
+
+        updatedOdom.pose.pose.orientation.x = qup.x();
+        updatedOdom.pose.pose.orientation.y = qup.y();
+        updatedOdom.pose.pose.orientation.z = qup.z();
+        updatedOdom.pose.pose.orientation.w = qup.w();
+
+        updatedOdom.twist.twist.linear.x = x_(3);
+        updatedOdom.twist.twist.linear.y = x_(4);
+        updatedOdom.twist.twist.linear.z = x_(5);
+
+        pubOdom_.publish(updatedOdom);
+        pose_=updatedOdom.pose.pose;
+        lastTime_=msg->header.stamp;
+
+
+
 }
 
 
@@ -106,7 +202,8 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 
 	
 		
-        tf::Quaternion q(
+
+	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
                     msg->pose.pose.orientation.y,
                     msg->pose.pose.orientation.z,
@@ -115,6 +212,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 
         tf::Matrix3x3 R_kimera_b_n(q);
 
+	
 
 
 	if(firstKimera_){
@@ -127,79 +225,76 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 
 		pose_ = msg->pose.pose;
 
+                tf::Vector3 vn_kimera;
+
+
+	        // rotate kimeta body axis velocity into the nav frame
+        	tf::Vector3 vn_imu;
+                tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
+                               msg->twist.twist.linear.y,
+                               msg->twist.twist.linear.z);
+    
+        	Rbn_=R_imu_nav_o_*R_body_imu_;
+        	vn_imu = Rbn_*vb_kimera;
+
 		x_ << pose_.position.x,
 		      pose_.position.y,
 		      pose_.position.z,
-		      0,
-		      0,
-		      0;
+		      vn_imu.x(),
+		      vn_imu.y(),
+		      vn_imu.z();
 	}
-//	ROS_INFO("Avg IMU %f %f %f %f",(rollInc_/incCounter_)*180.0/3.14, (pitchInc_/incCounter_)*180.0/3.14, (yawInc_/incCounter_)*180.0/3.14, incCounter_);
-	R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
-        rollInc_=0.0;
-        pitchInc_=0.0;
-        yawInc_=0.0;
-        incCounter_=0.0;
-	
 
-	tf::Vector3 vn_kimera( msg->twist.twist.linear.x,
+//	R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
+//        rollInc_=0.0;
+//        pitchInc_=0.0;
+//        yawInc_=0.0;
+//        incCounter_=0.0;
+	
+        // get kimera velocity represented in body frame
+
+	tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
 			       msg->twist.twist.linear.y,
 			       msg->twist.twist.linear.z);
-
-	// get kimera velocity represented in body frame
 	
 
 
-
-
-	tf::Vector3 vb_kimera;
-
-	vb_kimera = vn_kimera;
 
 	// rotate kimeta body axis velocity into the nav frame
-	tf::Vector3 vn_imu;
-	Rbn_=R_imu_nav_o_*R_body_imu_;
-	vn_imu = Rbn_*vb_kimera;
-
-//	ROS_INFO_STREAM("Vn kimera " << vn_kimera.x() << " " << vn_kimera.y() << " " << vn_kimera.z() );
-//	ROS_INFO_STREAM("Vb kimera " << vb_kimera.x()<< " " << vb_kimera.y() << " " << vb_kimera.z() );
-//	ROS_INFO_STREAM("Vn IMU " << vn_imu.x() << " " << vn_imu.y() << " " << vn_imu.z() );
+	tf::Vector3 vn_kim;
+//	Rbn_=R_imu_nav_o_*R_body_imu_;
+	vn_kim = Rbn_*vb_kimera;
 
 
-	
+//	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
 
-	//integrate position over time
-	tf::Vector3 currentPosition( pose_.position.x,
-			         pose_.position.y,
-				 pose_.position.z);
-
-	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
-     //   ROS_INFO(" In KimeraCB dt %f ",dt);
      
 
 	// state predicition
-	F_(0,3) = dt;
-	F_(1,4) = dt;
-	F_(2,5) = dt;
+//	F_(0,3) = dt;
+//	F_(1,4) = dt;
+//	F_(2,5) = dt;
 
-	x_ = F_*x_;
-	P_ = F_*P_*F_.transpose()+ Q_;
+//	x_ = F_*x_;
+//	P_ = F_*P_*F_.transpose()+ Q_;
 
-	// kimera update
-	zVIO_(0,0)= vn_imu.x();
-	zVIO_(1,0)= vn_imu.y();
-        zVIO_(2,0)= vn_imu.z();
+	// kimera measurement update
+	zVIO_(0,0)= vn_kim.x();
+	zVIO_(1,0)= vn_kim.y();
+        zVIO_(2,0)= vn_kim.z();
 	Eigen::MatrixXd S(3,3);
-	S = Rvio_ + Hvio_*P_*Hvio_.transpose();
+	S = Rvio_ + Hodom_*P_*Hodom_.transpose();
 
 	Eigen::MatrixXd K(6,3);
-	K = (P_*Hvio_.transpose())*S.inverse();
-
-	x_ = x_ + K*(zVIO_ - Hvio_*x_);
+	K = (P_*Hodom_.transpose())*S.inverse();
+        Eigen::MatrixXd I(6,6);
+	I.setIdentity();
+	P_ =(I-K*Hodom_)*P_;
+	x_ = x_ + K*(zVIO_ - Hodom_*x_);
 
 
 	// populate the odom message and publish
-	
+	/*
 	nav_msgs::Odometry updatedOdom;
 
 	updatedOdom.header.stamp = msg->header.stamp;
@@ -214,7 +309,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
         double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         ROS_INFO("RPY in Kimera %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
-
+	ROS_INFO_STREAM(" state x: " << x_.transpose() ); 
 	updatedOdom.pose.pose.position.x = x_(0);
 	updatedOdom.pose.pose.position.y = x_(1);
 	updatedOdom.pose.pose.position.z = x_(2);
@@ -231,6 +326,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 	pubOdom_.publish(updatedOdom);
 	pose_=updatedOdom.pose.pose;
 	lastTime_=msg->header.stamp;
+	*/
 }
 
 

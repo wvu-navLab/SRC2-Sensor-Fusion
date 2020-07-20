@@ -73,13 +73,13 @@ private:
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;
     Eigen::Matrix <double, 6, 6> Q_;
-    Eigen::Matrix <double, 2, 2> Rwo_;
+    Eigen::Matrix <double, 3, 3> Rwo_;
     Eigen::Matrix <double, 3, 3> Rvio_;
-    Eigen::Matrix <double, 3, 6> Hvio_;
+    Eigen::Matrix <double, 3, 6> Hodom_;
     Eigen::Matrix <double, 6, 6> F_;
     Eigen::Matrix <double, 3,1> zVIO_;
-    Eigen::Matrix <double, 2,1> zWO_;
-    Eigen::Matrix <double, 2,2> Rbn2x2_;
+    Eigen::Matrix <double, 3,1> zWO_;
+    
 
 
  };
