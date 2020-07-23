@@ -1,13 +1,12 @@
 <launch> 
-  <group ns="excavator_1">
+  <group ns="hauler_1">
 
-    <node pkg="vio_attitude_localization"
+    <node pkg="sensor_fusion"
           name="kf_attitude_gyro"
           type="kf_attitude_gyro"
           output="screen">
     </node>
 
-    
   </group>
 
 </launch>

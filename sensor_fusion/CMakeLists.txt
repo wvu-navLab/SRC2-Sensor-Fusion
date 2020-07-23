@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(vio_attitude_localization)
+project(sensor_fusion)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -144,13 +144,13 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/waypoint_nav_node.cpp)
 
-add_executable(vio_attitude_localization src/vio_attitude_localization.cpp)
-target_link_libraries(vio_attitude_localization ${catkin_LIBRARIES})
-# add_dependencies(waypoint_nav vio_attitude_localization_generate_messages_cpp)
+add_executable(sensor_fusion src/sensor_fusion.cpp)
+target_link_libraries(sensor_fusion ${catkin_LIBRARIES})
+# add_dependencies(waypoint_nav sensor_fusion_generate_messages_cpp)
 
 add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
 target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
-# add_dependencies(kf_attitude_gyro vio_attitude_localization_generate_messages_cpp)
+# add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -167,7 +167,7 @@ target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
 #   ${catkin_LIBRARIES}
 # )
 
-target_link_libraries(vio_attitude_localization 
+target_link_libraries(sensor_fusion 
   ${catkin_LIBRARIES}
 )
 

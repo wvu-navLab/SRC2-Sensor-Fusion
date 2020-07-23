@@ -1,7 +1,7 @@
-#include "vio_attitude_localization/vio_attitude_localization.h"
+#include "sensor_fusion/sensor_fusion.h"
 
 
-VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
+SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	: nh_(nh)
 {
 
@@ -12,11 +12,11 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 	pitchInc_=0;
 	yawInc_=0;
 
-	subKimera_=nh_.subscribe("/kimera_vio_ros/odometry",1, &VIOAttitudeLocalization::kimeraCallback_, this);
+	subKimera_=nh_.subscribe("/kimera_vio_ros/odometry",1, &SensorFusion::kimeraCallback_, this);
 
-	subImu_ = nh_.subscribe("/scout_1/imu_filtered",10,&VIOAttitudeLocalization::imuCallback_,this);
+	subImu_ = nh_.subscribe("/scout_1/imu_filtered",10,&SensorFusion::imuCallback_,this);
 
-	subWheelOdom_ = nh_.subscribe("/dead_reckoning/odometry",1,&VIOAttitudeLocalization::wheelOdomCallback_,this);
+	subWheelOdom_ = nh_.subscribe("/dead_reckoning/odometry",1,&SensorFusion::wheelOdomCallback_,this);
 
 	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("/scout_1/vio_attitude/odometry",1);
 
@@ -28,7 +28,7 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 	      0, 0, 0, pow(sigVel,2), 0, 0,
 	      0, 0, 0, 0, pow(sigVel,2), 0,
 	      0, 0, 0, 0, 0, pow(sigVel,2);
-	
+
 	P_ = Q_;
 
 	Hodom_ <<  0, 0, 0, 1, 0, 0,
@@ -42,14 +42,14 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 	Rwo_ << pow(sigWO,2), 0, 0,
 	        0, pow(sigWO,2), 0,
                 0, 0, pow(sigWO,2);
-		
+
 
 	Rvio_ << pow(sigVIO,2), 0, 0,
 	         0, pow(sigVIO,2), 0,
 		 0, 0, pow(sigVIO,2);
 
 	F_ << 1, 0, 0, .2, 0, 0,
-	      0, 1, 0, 0, .2, 0, 
+	      0, 1, 0, 0, .2, 0,
 	      0, 0, 1, 0, 0, .2,
 	      0, 0, 0, 1, 0, 0,
 	      0, 0, 0, 0, 1, 0,
@@ -59,7 +59,7 @@ VIOAttitudeLocalization::VIOAttitudeLocalization(ros::NodeHandle & nh)
 
 }
 
-void VIOAttitudeLocalization::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
+void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 {
 	tf::Quaternion q(
                     msg->orientation.x,
@@ -71,8 +71,8 @@ void VIOAttitudeLocalization::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg
 
 	tf::Matrix3x3 m(q);
 
-	
-	
+
+
 	double roll, pitch, yaw;
 	m.getRPY(roll,pitch,yaw);
 	if(firstIMU_) R_body_imu_ =m;
@@ -95,7 +95,7 @@ void VIOAttitudeLocalization::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg
 //	ROS_INFO("RPY %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
 
-void VIOAttitudeLocalization::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
+void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
 
@@ -109,7 +109,7 @@ void VIOAttitudeLocalization::wheelOdomCallback_(const nav_msgs::Odometry::Const
 	Rbn_=R_imu_nav_o_*R_body_imu_;
 
 	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
-	
+
 	// state predicition
         F_(0,3) = dt;
         F_(1,4) = dt;
@@ -196,12 +196,12 @@ void VIOAttitudeLocalization::wheelOdomCallback_(const nav_msgs::Odometry::Const
 
 
 
-void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
+void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
 
-	
-		
+
+
 
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
@@ -212,7 +212,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 
         tf::Matrix3x3 R_kimera_b_n(q);
 
-	
+
 
 
 	if(firstKimera_){
@@ -233,7 +233,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
                 tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
                                msg->twist.twist.linear.y,
                                msg->twist.twist.linear.z);
-    
+
         	Rbn_=R_imu_nav_o_*R_body_imu_;
         	vn_imu = Rbn_*vb_kimera;
 
@@ -250,13 +250,13 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 //        pitchInc_=0.0;
 //        yawInc_=0.0;
 //        incCounter_=0.0;
-	
+
         // get kimera velocity represented in body frame
 
 	tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
 			       msg->twist.twist.linear.y,
 			       msg->twist.twist.linear.z);
-	
+
 
 
 
@@ -268,7 +268,7 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 
 //	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
 
-     
+
 
 	// state predicition
 //	F_(0,3) = dt;
@@ -300,16 +300,16 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 	updatedOdom.header.stamp = msg->header.stamp;
 	updatedOdom.header.frame_id = "/scout_1_tf/odom";
 	updatedOdom.child_frame_id = "/scout_1_tf/base_footprint";
-	
+
 	tf::Quaternion qup;
 	qup.normalize();
 	Rbn_.getRotation(qup);
-	
+
 
         double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         ROS_INFO("RPY in Kimera %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
-	ROS_INFO_STREAM(" state x: " << x_.transpose() ); 
+	ROS_INFO_STREAM(" state x: " << x_.transpose() );
 	updatedOdom.pose.pose.position.x = x_(0);
 	updatedOdom.pose.pose.position.y = x_(1);
 	updatedOdom.pose.pose.position.z = x_(2);
@@ -332,15 +332,14 @@ void VIOAttitudeLocalization::kimeraCallback_(const nav_msgs::Odometry::ConstPtr
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "vio_attitude_localization");
+	ros::init(argc, argv, "sensor_fusion");
 	ros::NodeHandle nh("");
 
-	ROS_INFO(" VIO Localization started ");
+	ROS_INFO(" Sensor Fusion started ");
 
-	VIOAttitudeLocalization localizer(nh);
+	SensorFusion localizer(nh);
 
 	ros::spin();
 
 	return 0;
 }
-

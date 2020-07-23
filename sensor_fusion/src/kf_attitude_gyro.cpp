@@ -8,7 +8,7 @@
  * \date July 14, 2020
  */
 
-#include "vio_attitude_localization/kf_attitude_gyro.h"
+#include "sensor_fusion/kf_attitude_gyro.h"
 
 KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
 	: nh_(nh)
@@ -20,21 +20,21 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
     double sigma_rp = 0.1;
     double sigma_y = 0.1;
     double sigma_biases = 0.05;
-        
-    x_  <<  0, 
-            0, 
-            0, 
-            0, 
-            0, 
+
+    x_  <<  0,
+            0,
+            0,
+            0,
+            0,
             0;
 
-    P_  <<  pow(sigma_rp,2), 0, 0, 0, 0, 0, 
+    P_  <<  pow(sigma_rp,2), 0, 0, 0, 0, 0,
             0, pow(sigma_rp,2), 0, 0, 0, 0,
             0, 0, pow(sigma_y,2), 0, 0, 0,
             0, 0, 0, pow(sigma_biases,2), 0, 0,
             0, 0, 0, 0, pow(sigma_biases,2), 0,
             0, 0, 0, 0, 0, pow(sigma_biases,2);
-         
+
 	subImu = nh_.subscribe("imu",10,&KFAttitudeGyro::imuCallback,this);
     subOdom = nh_.subscribe("odometry/truth", 1000, &KFAttitudeGyro::odometryCallback, this);
 
@@ -51,7 +51,7 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
     pubYawEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/yaw",1);
 
     pubBiasesEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/gyro_biases",1);
-    
+
     pubImuFiltered = nh_.advertise<sensor_msgs::Imu>("imu_filtered",1);
 
     last_time_ = time_now.toSec();
@@ -121,7 +121,7 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 			0, sin(x_(0))/cos(x_(1)),   cos(x_(0))/cos(x_(1));
 
     Eigen::Matrix <double, 3, 1> angular_rates;
-	angular_rates = Cib*omega; 
+	angular_rates = Cib*omega;
 
 
     if (std::signbit(yaw*x_(2)))
@@ -135,7 +135,7 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
             yaw = yaw + 2 * M_PI;
         }
     }
- 
+
     // Non-linear update of state vector
     x_(0) = x_(0) + angular_rates(0) * dt_;
     x_(1) = x_(1) + angular_rates(1) * dt_;
@@ -172,7 +172,7 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 
     G(1,0) = 0;
     G(1,1) = (cos(x_(0))) * dt_;
-    G(1,2) = (- sin(x_(0))) * dt_;   
+    G(1,2) = (- sin(x_(0))) * dt_;
 
     G(2,0) = 0;
     G(2,1) = (sin(x_(0))/cos(x_(1))) * dt_;
@@ -198,11 +198,11 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     if (fabs(x_(2)) > M_PI)
     {
         std::cout << "Roll Over Detected" << std::endl;
-        if(x_(2) > 0) 
+        if(x_(2) > 0)
         {
             x_(2) = x_(2) - 2*M_PI;
         }
-        else 
+        else
         {
             x_(2) = x_(2) + 2*M_PI;
         }
@@ -232,11 +232,11 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     // Yaw wrapper
     if (fabs(x_(2)) > M_PI)
     {
-        if(x_(2) > 0) 
+        if(x_(2) > 0)
         {
             x_(2) = x_(2) - 2*M_PI;
         }
-        else 
+        else
         {
             x_(2) = x_(2) + 2*M_PI;
         }
@@ -265,7 +265,7 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     new_msg.orientation.x = new_q.x();
     new_msg.orientation.y = new_q.y();
     new_msg.orientation.z = new_q.z();
-    new_msg.orientation.w = new_q.w(); 
+    new_msg.orientation.w = new_q.w();
 
     new_msg.orientation_covariance = {  P_(0,0), P_(0,1), P_(0,2),
                                         P_(1,0), P_(1,1), P_(1,2),

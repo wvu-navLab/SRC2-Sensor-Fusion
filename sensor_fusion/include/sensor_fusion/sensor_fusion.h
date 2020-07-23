@@ -1,5 +1,5 @@
-#ifndef VIO_ATTITUDE_LOCALIZATION_H
-#define VIO_ATTITUDE_LOCALIZATION_H
+#ifndef SENSOR_FUSION_H
+#define SENSOR_FUSION_H
 
 
 // Include cpp important headers
@@ -27,11 +27,11 @@
 
 
 
-class VIOAttitudeLocalization
+class SensorFusion
 {
 public:
 
-    VIOAttitudeLocalization(ros::NodeHandle &);
+    SensorFusion(ros::NodeHandle &);
 
 private:
 
@@ -42,7 +42,7 @@ private:
     // initial global body to nav attitude, from truth
     tf::Matrix3x3 R_imu_nav_o_;
 
-    //relative attitude from quaternion in imu topic 
+    //relative attitude from quaternion in imu topic
     tf::Matrix3x3 R_body_imu_;
 
     tf::Matrix3x3 Rbn_;
@@ -79,9 +79,9 @@ private:
     Eigen::Matrix <double, 6, 6> F_;
     Eigen::Matrix <double, 3,1> zVIO_;
     Eigen::Matrix <double, 3,1> zWO_;
-    
+
 
 
  };
 
-#endif 
+#endif
