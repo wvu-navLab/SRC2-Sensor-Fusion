@@ -1,12 +1,10 @@
+<?xml version="1.0"?>
+
 <launch>
-  <group ns="scout_1">
+  <include file="$(find sensor_fusion)/launch/scout_kf_gyro_attitude.launch" >
+  </include>
 
-    <node pkg="sensor_fusion"
-          name="kf_attitude_gyro"
-          type="kf_attitude_gyro"
-          output="screen">
-    </node>
-
-  </group>
+  <include file="$(find sensor_fusion)/launch/sensor_fusion.launch" >
+  </include>
 
 </launch>

@@ -11,6 +11,7 @@
 #include <vector>
 
 
+
 // ROS headers
 #include <ros/ros.h>
 #include <tf/tf.h>
@@ -23,7 +24,9 @@
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
 #include <eigen3/Eigen/Dense>
-
+#include <std_msgs/Int64.h>
+#define INITIALIZED 1
+#define NOT_INITIALIZED 0
 
 
 
@@ -37,7 +40,7 @@ private:
 
     ros::NodeHandle & nh_;
 
-    ros::Publisher pubOdom_;
+    ros::Publisher pubOdom_, pubStatus_;
 
     // initial global body to nav attitude, from truth
     tf::Matrix3x3 R_imu_nav_o_;
@@ -54,6 +57,8 @@ private:
 
     bool firstIMU_;
 
+    int initialized_;
+
     ros::Time lastTime_;
 
     ros::Subscriber subKimera_;
@@ -68,7 +73,7 @@ private:
     void kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
-
+    void initializationStatus_();
 
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;
