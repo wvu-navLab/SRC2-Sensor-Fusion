@@ -195,6 +195,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
         pose_=updatedOdom.pose.pose;
         lastTime_=msg->header.stamp;
 
+	//broadcast the status to the state machine
+	initializationStatus_();
+
 
 
 }
@@ -244,11 +247,6 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		      vn_imu.z();
 	}
 
-//	R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
-//        rollInc_=0.0;
-//        pitchInc_=0.0;
-//        yawInc_=0.0;
-//        incCounter_=0.0;
 
         // get kimera velocity represented in body frame
 
@@ -261,21 +259,8 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	// rotate kimeta body axis velocity into the nav frame
 	tf::Vector3 vn_kim;
-//	Rbn_=R_imu_nav_o_*R_body_imu_;
 	vn_kim = Rbn_*vb_kimera;
 
-
-//	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
-
-
-
-	// state predicition
-//	F_(0,3) = dt;
-//	F_(1,4) = dt;
-//	F_(2,5) = dt;
-
-//	x_ = F_*x_;
-//	P_ = F_*P_*F_.transpose()+ Q_;
 
 	// kimera measurement update
 	zVIO_(0,0)= vn_kim.x();
@@ -292,40 +277,6 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	x_ = x_ + K*(zVIO_ - Hodom_*x_);
 
 
-	// populate the odom message and publish
-	/*
-	nav_msgs::Odometry updatedOdom;
-
-	updatedOdom.header.stamp = msg->header.stamp;
-	updatedOdom.header.frame_id = "/scout_1_tf/odom";
-	updatedOdom.child_frame_id = "/scout_1_tf/base_footprint";
-
-	tf::Quaternion qup;
-	qup.normalize();
-	Rbn_.getRotation(qup);
-
-
-        double roll, pitch, yaw;
-        Rbn_.getRPY(roll,pitch,yaw);
-        ROS_INFO("RPY in Kimera %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
-	ROS_INFO_STREAM(" state x: " << x_.transpose() );
-	updatedOdom.pose.pose.position.x = x_(0);
-	updatedOdom.pose.pose.position.y = x_(1);
-	updatedOdom.pose.pose.position.z = x_(2);
-
-	updatedOdom.pose.pose.orientation.x = qup.x();
-	updatedOdom.pose.pose.orientation.y = qup.y();
-	updatedOdom.pose.pose.orientation.z = qup.z();
-	updatedOdom.pose.pose.orientation.w = qup.w();
-
-	updatedOdom.twist.twist.linear.x = x_(3);
-	updatedOdom.twist.twist.linear.y = x_(4);
-	updatedOdom.twist.twist.linear.z = x_(5);
-
-	pubOdom_.publish(updatedOdom);
-	pose_=updatedOdom.pose.pose;
-	lastTime_=msg->header.stamp;
-	*/
 }
 
 void SensorFusion::initializationStatus_()
@@ -338,7 +289,7 @@ void SensorFusion::initializationStatus_()
 		status.data=NOT_INITIALIZED;
 	}
 
-pubStatus_.publish(status);
+        pubStatus_.publish(status);
 
 }
 
