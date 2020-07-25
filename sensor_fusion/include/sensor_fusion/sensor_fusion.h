@@ -35,6 +35,7 @@ class SensorFusion
 public:
 
     SensorFusion(ros::NodeHandle &);
+    void initializationStatus_();
 
 private:
 
@@ -73,7 +74,7 @@ private:
     void kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
-    void initializationStatus_();
+
 
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;

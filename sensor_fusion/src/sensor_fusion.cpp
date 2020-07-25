@@ -195,8 +195,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
         pose_=updatedOdom.pose.pose;
         lastTime_=msg->header.stamp;
 
-	//broadcast the status to the state machine
-	initializationStatus_();
+				//TODO: if pose NaN, then publish lost state message
 
 
 
@@ -204,7 +203,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
-
+				//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
                     msg->pose.pose.orientation.y,
@@ -257,7 +256,7 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 
 
-	// rotate kimeta body axis velocity into the nav frame
+	// rotate kimera body axis velocity into the nav frame
 	tf::Vector3 vn_kim;
 	vn_kim = Rbn_*vb_kimera;
 
@@ -297,12 +296,19 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "sensor_fusion");
 	ros::NodeHandle nh("");
-
+	ros::Rate rate(100);
 	ROS_INFO(" Sensor Fusion started ");
 
 	SensorFusion localizer(nh);
 
-	ros::spin();
+	// ros::spin();
+	while(ros::ok())
+	{
+
+			localizer.initializationStatus_();
+			ros::spinOnce();
+			rate.sleep();
+	}
 
 	return 0;
 }
