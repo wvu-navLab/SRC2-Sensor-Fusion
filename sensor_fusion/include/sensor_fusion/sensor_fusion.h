@@ -60,7 +60,8 @@ private:
 
     int initialized_;
 
-    ros::Time lastTime_;
+    ros::Time lastTime_wo_;
+    ros::Time lastTime_vio_;
 
     ros::Subscriber subKimera_;
     ros::Subscriber subImu_;

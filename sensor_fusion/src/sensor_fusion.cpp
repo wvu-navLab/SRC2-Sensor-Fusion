@@ -113,7 +113,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	Rbn_=R_imu_nav_o_*R_body_imu_;
 
-	double dt = msg->header.stamp.toSec() - lastTime_.toSec();
+	double dt = msg->header.stamp.toSec() - lastTime_wo_.toSec();
 
 	// state predicition
         F_(0,3) = dt;
@@ -193,7 +193,15 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
         pubOdom_.publish(updatedOdom);
         pose_=updatedOdom.pose.pose;
-        lastTime_=msg->header.stamp;
+        lastTime_wo_=msg->header.stamp;
+
+				if(fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>.5){
+					ROS_INFO_STREAM(" KIMERA FAIL! " );
+					ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
+					ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vio_.toSec() );
+					ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec()) );
+
+				}
 
 				//TODO: if pose NaN, then publish lost state message
 
@@ -221,7 +229,7 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		//since kimera is init with true pose, pick up true global attitude on first call
 		// later we can get this directly from get true pose
 
-		lastTime_ = msg->header.stamp;
+
 		R_imu_nav_o_ = R_kimera_b_n*R_body_imu_.transpose();
 
 		pose_ = msg->pose.pose;
@@ -264,7 +272,7 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	// kimera measurement update
 	zVIO_(0,0)= vn_kim.x();
 	zVIO_(1,0)= vn_kim.y();
-        zVIO_(2,0)= vn_kim.z();
+  zVIO_(2,0)= vn_kim.z();
 	Eigen::MatrixXd S(3,3);
 	S = Rvio_ + Hodom_*P_*Hodom_.transpose();
 
@@ -272,6 +280,16 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	K = (P_*Hodom_.transpose())*S.inverse();
         Eigen::MatrixXd I(6,6);
 	I.setIdentity();
+	Eigen::Vector3d Innovation;
+
+	Innovation = zVIO_ - Hodom_*x_;
+
+	lastTime_vio_ = msg->header.stamp;
+
+	if (Innovation.norm()>2.0) {
+		ROS_INFO_STREAM(" KIMERA FAIL DUE TO VELOCITY ERROR! " );
+		return;
+	}
 	P_ =(I-K*Hodom_)*P_;
 	x_ = x_ + K*(zVIO_ - Hodom_*x_);
 
