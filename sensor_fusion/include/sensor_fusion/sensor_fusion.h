@@ -87,6 +87,9 @@ private:
     Eigen::Matrix <double, 3,1> zVIO_;
     Eigen::Matrix <double, 3,1> zWO_;
 
+    void publishOdom_();
+    
+
 
 
  };

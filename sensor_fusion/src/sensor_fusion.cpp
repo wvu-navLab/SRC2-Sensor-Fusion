@@ -125,8 +125,6 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 
 
-
-
 	double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         if((pitch*180/3.1414926) > 8){
@@ -162,48 +160,22 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
         x_ = x_ + K*(zWO_ - Hodom_*x_);
 
 	}
-
-	nav_msgs::Odometry updatedOdom;
-
-        updatedOdom.header.stamp = msg->header.stamp;
-        updatedOdom.header.frame_id = "/scout_1_tf/odom";
-        updatedOdom.child_frame_id = "/scout_1_tf/base_footprint";
-
-        tf::Quaternion qup;
-        qup.normalize();
-        Rbn_.getRotation(qup);
+	
 
 
-
-        Rbn_.getRPY(roll,pitch,yaw);
-        ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
-        ROS_INFO_STREAM(" state x: " << x_.transpose() );
-        updatedOdom.pose.pose.position.x = x_(0);
-        updatedOdom.pose.pose.position.y = x_(1);
-        updatedOdom.pose.pose.position.z = x_(2);
-
-        updatedOdom.pose.pose.orientation.x = qup.x();
-        updatedOdom.pose.pose.orientation.y = qup.y();
-        updatedOdom.pose.pose.orientation.z = qup.z();
-        updatedOdom.pose.pose.orientation.w = qup.w();
-
-        updatedOdom.twist.twist.linear.x = x_(3);
-        updatedOdom.twist.twist.linear.y = x_(4);
-        updatedOdom.twist.twist.linear.z = x_(5);
-
-        pubOdom_.publish(updatedOdom);
-        pose_=updatedOdom.pose.pose;
         lastTime_wo_=msg->header.stamp;
+	publishOdom_();
 
-				if(fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>.5){
-					ROS_INFO_STREAM(" KIMERA FAIL! " );
-					ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
-					ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vio_.toSec() );
-					ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec()) );
 
-				}
+	if(fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>.5){
+		ROS_INFO_STREAM(" KIMERA FAIL! " );
+		ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
+		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vio_.toSec() );
+		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec()) );
 
-				//TODO: if pose NaN, then publish lost state message
+	}
+
+	//TODO: if pose NaN, then publish lost state message
 
 
 
@@ -211,7 +183,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
-				//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
+	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
                     msg->pose.pose.orientation.y,
@@ -272,7 +244,7 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	// kimera measurement update
 	zVIO_(0,0)= vn_kim.x();
 	zVIO_(1,0)= vn_kim.y();
-  zVIO_(2,0)= vn_kim.z();
+        zVIO_(2,0)= vn_kim.z();
 	Eigen::MatrixXd S(3,3);
 	S = Rvio_ + Hodom_*P_*Hodom_.transpose();
 
@@ -287,7 +259,7 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	lastTime_vio_ = msg->header.stamp;
 
 	if (Innovation.norm()>2.0) {
-		ROS_INFO_STREAM(" KIMERA FAIL DUE TO VELOCITY ERROR! " );
+		ROS_INFO_STREAM(" KIMERA UPDATE SKIP DUE TO VELOCITY ERROR! " );
 		return;
 	}
 	P_ =(I-K*Hodom_)*P_;
@@ -308,6 +280,40 @@ void SensorFusion::initializationStatus_()
 
         pubStatus_.publish(status);
 
+}
+
+void SensorFusion::publishOdom_()
+{
+	nav_msgs::Odometry updatedOdom;
+
+        updatedOdom.header.stamp = lastTime_wo_;
+        updatedOdom.header.frame_id = "scout_1_tf/odom";
+        updatedOdom.child_frame_id = "scout_1_tf/base_footprint";
+
+        tf::Quaternion qup;
+        qup.normalize();
+        Rbn_.getRotation(qup);
+
+
+	double roll, pitch, yaw;
+        Rbn_.getRPY(roll,pitch,yaw);
+        ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
+        ROS_INFO_STREAM(" state x: " << x_.transpose() );
+        updatedOdom.pose.pose.position.x = x_(0);
+        updatedOdom.pose.pose.position.y = x_(1);
+        updatedOdom.pose.pose.position.z = x_(2);
+
+        updatedOdom.pose.pose.orientation.x = qup.x();
+        updatedOdom.pose.pose.orientation.y = qup.y();
+        updatedOdom.pose.pose.orientation.z = qup.z();
+        updatedOdom.pose.pose.orientation.w = qup.w();
+
+        updatedOdom.twist.twist.linear.x = x_(3);
+        updatedOdom.twist.twist.linear.y = x_(4);
+        updatedOdom.twist.twist.linear.z = x_(5);
+
+        pubOdom_.publish(updatedOdom);
+        pose_=updatedOdom.pose.pose;
 }
 
 int main(int argc, char **argv)
