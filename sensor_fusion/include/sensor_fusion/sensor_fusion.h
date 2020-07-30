@@ -25,6 +25,7 @@
 #include <geometry_msgs/Pose.h>
 #include <eigen3/Eigen/Dense>
 #include <std_msgs/Int64.h>
+#include <tf/transform_broadcaster.h>
 #define INITIALIZED 1
 #define NOT_INITIALIZED 0
 
@@ -88,6 +89,9 @@ private:
     Eigen::Matrix <double, 3,1> zWO_;
 
     void publishOdom_();
+
+    tf::TransformBroadcaster odom_broadcaster_;
+
     
 
 
