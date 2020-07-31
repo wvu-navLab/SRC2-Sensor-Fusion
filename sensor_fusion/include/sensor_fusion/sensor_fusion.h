@@ -92,7 +92,7 @@ private:
 
     tf::TransformBroadcaster odom_broadcaster_;
 
-    
+    bool averageIMU_;
 
 
 

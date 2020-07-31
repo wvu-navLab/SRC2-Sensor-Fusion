@@ -6,6 +6,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	: nh_(nh)
 {
 
+	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstKimera_ = true;
 	firstIMU_= true;
 	incCounter_=0;
@@ -81,21 +82,31 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 	double roll, pitch, yaw;
 	m.getRPY(roll,pitch,yaw);
 	if(firstIMU_) R_body_imu_ =m;
-	rollInc_ = rollInc_ + roll;
-	pitchInc_ = pitchInc_ + pitch;
-	incCounter_ = incCounter_ + 1.0;
-	if(incCounter_ > 1.0){
-		// if there has been a roll over
-		double yawAvg=(yawInc_/(incCounter_-1.0));
-		if (fabs( yaw - yawAvg)>3.14){
-			std::cout << "Roll Over Detected " << yaw << " " << yawAvg << std::endl;
-			if( yaw < yawAvg ) yaw = yaw +6.2831185;
-			else yaw = yaw - 6.2831185;
-		}
+	
+	if(averageIMU_){
+	
+		rollInc_ = rollInc_ + roll;
+		pitchInc_ = pitchInc_ + pitch;
+		incCounter_ = incCounter_ + 1.0;
+		if(incCounter_ > 1.0){
+			// if there has been a roll over
+			double yawAvg=(yawInc_/(incCounter_-1.0));
+			if (fabs( yaw - yawAvg)>3.14){
+				std::cout << "Roll Over Detected " << yaw << " " << yawAvg << std::endl;
+				if( yaw < yawAvg ) yaw = yaw +6.2831185;
+				else yaw = yaw - 6.2831185;
+				}
+			}
+
+		yawInc_ = yawInc_ + yaw;
+	}
+	else{
+		// not averaging, just using current roll, pitch, yaw
+		rollInc_ = roll;
+		pitchInc_ = pitch;
+		yawInc_ = yaw;
 	}
 
-
-	yawInc_ = yawInc_ + yaw;
 	firstIMU_=false;
 //	ROS_INFO("RPY %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
@@ -104,11 +115,17 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
 
-	R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
-        rollInc_=0.0;
-        pitchInc_=0.0;
-        yawInc_=0.0;
-        incCounter_=0.0;
+	if(averageIMU_){
+		R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
+		rollInc_=0.0;
+        	pitchInc_=0.0;
+        	yawInc_=0.0;
+        	incCounter_=0.0;
+	}
+	else{
+		// not averaging, just use current roll, pitch & yaw
+		R_body_imu_.setRPY(rollInc_, pitchInc_, yawInc_);
+	}
 
 
 	Rbn_=R_imu_nav_o_*R_body_imu_;
