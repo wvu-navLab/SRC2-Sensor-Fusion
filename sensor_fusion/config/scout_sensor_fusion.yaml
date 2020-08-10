@@ -1,0 +1,3 @@
+odometry_child_frame_id : "scout_1_tf/base_footprint"
+joint_state_frame_id : "scout_1_tf/chassis"
+

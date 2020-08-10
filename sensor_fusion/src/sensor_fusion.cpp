@@ -6,6 +6,22 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	: nh_(nh)
 {
 
+    std::string node_name = "sensor_fusion";
+
+    if(ros::param::get(node_name+"/odometry_frame_id",odometry_frame_id)==false)
+    {
+      ROS_FATAL("No parameter 'odometry_frame_id' specified");
+      ros::shutdown();
+      exit(1);
+    }
+    if(ros::param::get(node_name+"/odometry_child_frame_id",odometry_child_frame_id)==false)
+    {
+      ROS_FATAL("No parameter 'odometry_child_frame_id' specified");
+      ros::shutdown();
+      exit(1);
+    }
+
+
 	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstKimera_ = true;
 	firstIMU_= true;
@@ -15,13 +31,13 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	yawInc_=0;
 	// initialized_=NOT_INITIALIZED;
 
-	subKimera_=nh_.subscribe("/kimera_vio_ros/odometry",1, &SensorFusion::kimeraCallback_, this);
+	subKimera_=nh_.subscribe("kimera_vio_ros/odometry",1, &SensorFusion::kimeraCallback_, this);
 
-	subImu_ = nh_.subscribe("/scout_1/imu_filtered",10,&SensorFusion::imuCallback_,this); //Robot namespace here
+	subImu_ = nh_.subscribe("imu_filtered",10,&SensorFusion::imuCallback_,this); //Robot namespace here
 
-	subWheelOdom_ = nh_.subscribe("/dead_reckoning/odometry",1,&SensorFusion::wheelOdomCallback_,this);
+	subWheelOdom_ = nh_.subscribe("dead_reckoning/odometry",1,&SensorFusion::wheelOdomCallback_,this);
 
-	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("/scout_1/localization/odometry/sensor_fusion",1); //Robot namespace here
+	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("localization/odometry/sensor_fusion",1); //Robot namespace here
 
 	pubStatus_= nh_.advertise<std_msgs::Int64>("state_machine/localized_base",100);
 
@@ -304,8 +320,8 @@ void SensorFusion::publishOdom_()
 	nav_msgs::Odometry updatedOdom;
 
         updatedOdom.header.stamp = lastTime_wo_;
-        updatedOdom.header.frame_id = "scout_1_tf/odom";
-        updatedOdom.child_frame_id = "scout_1_tf/base_footprint";
+        updatedOdom.header.frame_id = odometry_frame_id;
+        updatedOdom.child_frame_id = odometry_child_frame_id;
 
         tf::Quaternion qup;
         qup.normalize();

@@ -4,7 +4,7 @@
   <include file="$(find sensor_fusion)/launch/scout_kf_gyro_attitude.launch" >
   </include>
 
-  <include file="$(find sensor_fusion)/launch/sensor_fusion.launch" >
+  <include file="$(find sensor_fusion)/launch/scout_localization.launch" >
   </include>
 
 </launch>
