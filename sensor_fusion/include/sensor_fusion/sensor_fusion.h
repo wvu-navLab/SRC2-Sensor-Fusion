@@ -94,6 +94,10 @@ private:
 
     bool averageIMU_;
 
+    std::string odometry_frame_id;
+    std::string odometry_child_frame_id;
+
+
 
 
  };

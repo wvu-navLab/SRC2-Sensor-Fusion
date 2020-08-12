@@ -7,6 +7,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 {
 
     std::string node_name = "sensor_fusion";
+     
+
 
     if(ros::param::get(node_name+"/odometry_frame_id",odometry_frame_id)==false)
     {
@@ -31,7 +33,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	yawInc_=0;
 	// initialized_=NOT_INITIALIZED;
 
-	subKimera_=nh_.subscribe("kimera_vio_ros/odometry",1, &SensorFusion::kimeraCallback_, this);
+	subKimera_=nh_.subscribe("/kimera_vio_ros/odometry",1, &SensorFusion::kimeraCallback_, this);
 
 	subImu_ = nh_.subscribe("imu_filtered",10,&SensorFusion::imuCallback_,this); //Robot namespace here
 
@@ -83,6 +85,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 {
+	std::cout << " IMU Callback " << std::endl;
 	tf::Quaternion q(
                     msg->orientation.x,
                     msg->orientation.y,
@@ -130,7 +133,7 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-
+	std::cout <<"Wheel Odom Callback " << std::endl;
 	if(averageIMU_){
 		R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
 		rollInc_=0.0;
@@ -216,6 +219,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
+	std::cout << " Kimera Callback " << std::endl;
 	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
