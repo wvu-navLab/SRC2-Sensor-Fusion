@@ -23,6 +23,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
       exit(1);
     }
 
+	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
 	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstKimera_ = true;
@@ -203,11 +204,13 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	publishOdom_();
 
 
-	if(fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>.5){
+	if((fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>.5)&& firstKimera_){
 		ROS_INFO_STREAM(" KIMERA FAIL! " );
 		ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
 		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vio_.toSec() );
 		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec()) );
+		std_srvs::Trigger trig;
+		clt_restart_kimera_.call(trig);
 
 	}
 

@@ -18,7 +18,7 @@
 
 #include <realtime_tools/realtime_buffer.h>
 #include <realtime_tools/realtime_publisher.h>
-
+#include <std_srvs/Trigger.h>
 // Custom message includes. Auto-generated from msg/ directory.
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
@@ -26,6 +26,8 @@
 #include <eigen3/Eigen/Dense>
 #include <std_msgs/Int64.h>
 #include <tf/transform_broadcaster.h>
+//#include <kimera_vio_ros/KimeraVioRos.h>
+
 #define INITIALIZED 1
 #define NOT_INITIALIZED 0
 
@@ -97,6 +99,7 @@ private:
     std::string odometry_frame_id;
     std::string odometry_child_frame_id;
 
+    ros::ServiceClient clt_restart_kimera_;
 
 
 

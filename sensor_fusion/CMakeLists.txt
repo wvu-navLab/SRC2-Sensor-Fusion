@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   tf
   srcp2_msgs
+  std_srvs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -113,7 +114,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES waypoint_nav
-  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs nav_msgs sensor_msgs
+  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs nav_msgs sensor_msgs 
 #  DEPENDS system_lib
 )
 
