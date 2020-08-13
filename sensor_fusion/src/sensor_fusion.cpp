@@ -24,7 +24,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
     }
 
 
-	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
+	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstKimera_ = true;
 	firstIMU_= true;
 	incCounter_=0;
