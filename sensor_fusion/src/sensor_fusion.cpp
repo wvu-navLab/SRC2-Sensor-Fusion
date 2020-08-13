@@ -164,9 +164,10 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
-        if((pitch*180/3.1414926) > 8){
+        if((pitch*180/3.1414926) > 15){
                 ROS_INFO("Skipping Wheel Odom Update due to High Pitch %f ",pitch*180/3.1414926);
-        }else{
+        }
+	else{
 
 
 	tf::Vector3 vb_wo( msg->twist.twist.linear.x,
@@ -204,13 +205,15 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	publishOdom_();
 
 
-	if((fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>.5)&& firstKimera_){
+	if((fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>60)&& !firstKimera_){
 		ROS_INFO_STREAM(" KIMERA FAIL! " );
 		ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
 		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vio_.toSec() );
 		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec()) );
 		std_srvs::Trigger trig;
 		clt_restart_kimera_.call(trig);
+		lastTime_vio_=msg->header.stamp;
+
 
 	}
 
