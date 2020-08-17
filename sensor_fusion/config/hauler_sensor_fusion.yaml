@@ -1,0 +1,2 @@
+odometry_child_frame_id : "hauler_1_tf/base_footprint"
+odometry_frame_id : "hauler_1_tf/odom"

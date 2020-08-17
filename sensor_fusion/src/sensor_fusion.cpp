@@ -7,7 +7,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 {
 
     std::string node_name = "sensor_fusion";
-     
+
 
 
     if(ros::param::get(node_name+"/odometry_frame_id",odometry_frame_id)==false)
@@ -86,7 +86,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 {
-	std::cout << " IMU Callback " << std::endl;
+	// std::cout << " IMU Callback " << std::endl;
 	tf::Quaternion q(
                     msg->orientation.x,
                     msg->orientation.y,
@@ -102,9 +102,9 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 	double roll, pitch, yaw;
 	m.getRPY(roll,pitch,yaw);
 	if(firstIMU_) R_body_imu_ =m;
-	
+
 	if(averageIMU_){
-	
+
 		rollInc_ = rollInc_ + roll;
 		pitchInc_ = pitchInc_ + pitch;
 		incCounter_ = incCounter_ + 1.0;
@@ -134,7 +134,7 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-	std::cout <<"Wheel Odom Callback " << std::endl;
+	// std::cout <<"Wheel Odom Callback " << std::endl;
 	if(averageIMU_){
 		R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
 		rollInc_=0.0;
@@ -198,7 +198,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
         x_ = x_ + K*(zWO_ - Hodom_*x_);
 
 	}
-	
+
 
 
         lastTime_wo_=msg->header.stamp;
@@ -226,7 +226,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-	std::cout << " Kimera Callback " << std::endl;
+	// std::cout << " Kimera Callback " << std::endl;
 	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
@@ -341,7 +341,7 @@ void SensorFusion::publishOdom_()
 
 	double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
-        ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
+        // ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
         ROS_INFO_STREAM(" state x: " << x_.transpose() );
         updatedOdom.pose.pose.position.x = x_(0);
         updatedOdom.pose.pose.position.y = x_(1);
