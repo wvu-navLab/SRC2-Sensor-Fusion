@@ -22,6 +22,11 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
       ros::shutdown();
       exit(1);
     }
+    if(ros::param::get(node_name+"/position_update_topic", position_update_topic)==false){
+       ROS_FATAL("No parameter 'position_update_topic' specified");
+       ros::shutdown();
+       exit(1);
+     }
 
 	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
@@ -40,6 +45,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	subWheelOdom_ = nh_.subscribe("dead_reckoning/odometry",1,&SensorFusion::wheelOdomCallback_,this);
 
+	subPositionUpdate_ = nh_.subscribe(position_update_topic, 1, &SensorFusion::positionUpdateCallback_,this);
+
 	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("localization/odometry/sensor_fusion",1); //Robot namespace here
 
 	pubStatus_= nh_.advertise<std_msgs::Int64>("state_machine/localized_base",100);
@@ -56,10 +63,18 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	P_ = Q_;
 
-	Hodom_ <<  0, 0, 0, 1, 0, 0,
+	Hodom_ << 0, 0, 0, 1, 0, 0,
 	          0, 0, 0, 0, 1, 0,
 		  0, 0, 0, 0, 0, 1;
 
+	Hposition_ << 1, 0, 0, 0, 0, 0,
+		      0, 1, 0, 0, 0, 0, 
+		      0, 0, 1, 0, 0, 0;
+
+	double sigPosition = .2;
+	Rposition_ << pow(sigPosition,2), 0, 0,
+		      0, pow(sigPosition,2), 0,
+		      0, 0, pow(sigPosition,2);
 
 
 	double sigWO = .05;
@@ -222,6 +237,27 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 
 }
+
+void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg){
+
+	 // kimera measurement update
+        zPosition_(0,0)= msg->position.x;
+        zPosition_(1,0)= msg->position.y;
+        zPosition_(2,0)= msg->position.z;
+        Eigen::MatrixXd S(3,3);
+        S = Rposition_ + Hposition_*P_*Hposition_.transpose();
+
+        Eigen::MatrixXd K(6,3);
+        K = (P_*Hposition_.transpose())*S.inverse();
+        Eigen::MatrixXd I(6,6);
+        I.setIdentity();
+        P_ =(I-K*Hposition_)*P_;
+        x_ = x_ + K*(zPosition_ - Hposition_*x_);
+
+
+}
+
+
 
 void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {

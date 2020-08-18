@@ -69,6 +69,7 @@ private:
     ros::Subscriber subKimera_;
     ros::Subscriber subImu_;
     ros::Subscriber subWheelOdom_;
+    ros::Subscriber subPositionUpdate_;
 
     double rollInc_;
     double pitchInc_;
@@ -78,7 +79,7 @@ private:
     void kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
-
+    void positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg);
 
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;
@@ -90,6 +91,10 @@ private:
     Eigen::Matrix <double, 3,1> zVIO_;
     Eigen::Matrix <double, 3,1> zWO_;
 
+    Eigen::Matrix <double, 3, 6> Hposition_;
+    Eigen::Matrix <double, 3, 1> zPosition_;
+    Eigen::Matrix <double, 3, 3> Rposition_;
+
     void publishOdom_();
 
     tf::TransformBroadcaster odom_broadcaster_;
@@ -98,7 +103,7 @@ private:
 
     std::string odometry_frame_id;
     std::string odometry_child_frame_id;
-
+    std::string position_update_topic;
     ros::ServiceClient clt_restart_kimera_;
 
 
