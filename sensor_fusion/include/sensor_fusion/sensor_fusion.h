@@ -57,16 +57,16 @@ private:
     // pose estimate, saved over time to integrate position
     geometry_msgs::Pose pose_;
 
-    bool firstKimera_;
-
+    bool firstWO_;
+    bool firstVO_;
     bool firstIMU_;
 
     int initialized_;
 
     ros::Time lastTime_wo_;
-    ros::Time lastTime_vio_;
+    ros::Time lastTime_vo_;
 
-    ros::Subscriber subKimera_;
+    ros::Subscriber subVO_;
     ros::Subscriber subImu_;
     ros::Subscriber subWheelOdom_;
     ros::Subscriber subPositionUpdate_;
@@ -76,7 +76,7 @@ private:
     double yawInc_;
     double incCounter_;
 
-    void kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg);
+    void voCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg);
@@ -85,10 +85,10 @@ private:
     Eigen::Matrix <double, 6, 6> P_;
     Eigen::Matrix <double, 6, 6> Q_;
     Eigen::Matrix <double, 3, 3> Rwo_;
-    Eigen::Matrix <double, 3, 3> Rvio_;
+    Eigen::Matrix <double, 3, 3> Rvo_;
     Eigen::Matrix <double, 3, 6> Hodom_;
     Eigen::Matrix <double, 6, 6> F_;
-    Eigen::Matrix <double, 3,1> zVIO_;
+    Eigen::Matrix <double, 3,1> zVO_;
     Eigen::Matrix <double, 3,1> zWO_;
 
     Eigen::Matrix <double, 3, 6> Hposition_;

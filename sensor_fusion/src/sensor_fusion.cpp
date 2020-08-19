@@ -31,7 +31,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
 	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
-	firstKimera_ = true;
+	firstVO_ = true;
+	firstWO_ = true;
 	firstIMU_= true;
 	incCounter_=0;
 	rollInc_=0;
@@ -39,7 +40,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	yawInc_=0;
 	// initialized_=NOT_INITIALIZED;
 
-	subKimera_=nh_.subscribe("/kimera_vio_ros/odometry",1, &SensorFusion::kimeraCallback_, this);
+	subVO_=nh_.subscribe("/kimera_vio_ros/odometry",1, &SensorFusion::voCallback_, this);
 
 	subImu_ = nh_.subscribe("imu_filtered",10,&SensorFusion::imuCallback_,this); //Robot namespace here
 
@@ -78,15 +79,15 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 
 	double sigWO = .05;
-	double sigVIO = .05;
+	double sigVO = .05;
 	Rwo_ << pow(sigWO,2), 0, 0,
 	        0, pow(sigWO,2), 0,
                 0, 0, pow(sigWO,2);
 
 
-	Rvio_ << pow(sigVIO,2), 0, 0,
-	         0, pow(sigVIO,2), 0,
-		 0, 0, pow(sigVIO,2);
+	Rvo_ << pow(sigVO,2), 0, 0,
+	         0, pow(sigVO,2), 0,
+		 0, 0, pow(sigVO,2);
 
 	F_ << 1, 0, 0, .2, 0, 0,
 	      0, 1, 0, 0, .2, 0,
@@ -148,6 +149,48 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
+
+	tf::Quaternion q(
+                    msg->pose.pose.orientation.x,
+                    msg->pose.pose.orientation.y,
+                    msg->pose.pose.orientation.z,
+                    msg->pose.pose.orientation.w
+                    );
+
+        tf::Matrix3x3 R_wo_b_n(q);
+
+
+
+
+        if(firstWO_){
+                if(!firstIMU_) firstWO_=false;
+                //since kimera is init with true pose, pick up true global attitude on first call
+                // later we can get this directly from get true pose
+
+
+                R_imu_nav_o_ = R_wo_b_n*R_body_imu_.transpose();
+
+                pose_ = msg->pose.pose;
+
+
+                // rotate kimeta body axis velocity into the nav frame
+                tf::Vector3 vn_imu;
+                tf::Vector3 vb_wo( msg->twist.twist.linear.x,
+                               msg->twist.twist.linear.y,
+                               msg->twist.twist.linear.z);
+
+                Rbn_=R_imu_nav_o_*R_body_imu_;
+                vn_imu = Rbn_*vb_wo;
+
+                x_ << pose_.position.x,
+                      pose_.position.y,
+                      pose_.position.z,
+                      vn_imu.x(),
+                      vn_imu.y(),
+                      vn_imu.z();
+        }
+	
 
 	// std::cout <<"Wheel Odom Callback " << std::endl;
 	if(averageIMU_){
@@ -220,14 +263,14 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	publishOdom_();
 
 
-	if((fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec())>60)&& !firstKimera_){
-		ROS_INFO_STREAM(" KIMERA FAIL! " );
+	if((fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec())>60)&& !firstVO_){
+		ROS_INFO_STREAM(" VO NODE FAIL!? " );
 		ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
-		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vio_.toSec() );
-		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vio_.toSec()) );
-		std_srvs::Trigger trig;
-		clt_restart_kimera_.call(trig);
-		lastTime_vio_=msg->header.stamp;
+		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vo_.toSec() );
+		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec()) );
+	//	std_srvs::Trigger trig;
+	//	clt_restart_kimera_.call(trig);
+	//	lastTime_vio_=msg->header.stamp;
 
 
 	}
@@ -259,8 +302,10 @@ void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& 
 
 
 
-void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
+void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
+	if(!firstIMU_) firstVO_=false;
 
 	// std::cout << " Kimera Callback " << std::endl;
 	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
@@ -271,40 +316,6 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                     msg->pose.pose.orientation.w
                     );
 
-        tf::Matrix3x3 R_kimera_b_n(q);
-
-
-
-
-	if(firstKimera_){
-		if(!firstIMU_) firstKimera_=false;
-		//since kimera is init with true pose, pick up true global attitude on first call
-		// later we can get this directly from get true pose
-
-
-		R_imu_nav_o_ = R_kimera_b_n*R_body_imu_.transpose();
-
-		pose_ = msg->pose.pose;
-
-                tf::Vector3 vn_kimera;
-
-
-	        // rotate kimeta body axis velocity into the nav frame
-        	tf::Vector3 vn_imu;
-                tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
-                               msg->twist.twist.linear.y,
-                               msg->twist.twist.linear.z);
-
-        	Rbn_=R_imu_nav_o_*R_body_imu_;
-        	vn_imu = Rbn_*vb_kimera;
-
-		x_ << pose_.position.x,
-		      pose_.position.y,
-		      pose_.position.z,
-		      vn_imu.x(),
-		      vn_imu.y(),
-		      vn_imu.z();
-	}
 
 
         // get kimera velocity represented in body frame
@@ -322,11 +333,11 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 
 	// kimera measurement update
-	zVIO_(0,0)= vn_kim.x();
-	zVIO_(1,0)= vn_kim.y();
-        zVIO_(2,0)= vn_kim.z();
+	zVO_(0,0)= vn_kim.x();
+	zVO_(1,0)= vn_kim.y();
+        zVO_(2,0)= vn_kim.z();
 	Eigen::MatrixXd S(3,3);
-	S = Rvio_ + Hodom_*P_*Hodom_.transpose();
+	S = Rvo_ + Hodom_*P_*Hodom_.transpose();
 
 	Eigen::MatrixXd K(6,3);
 	K = (P_*Hodom_.transpose())*S.inverse();
@@ -334,16 +345,16 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	I.setIdentity();
 	Eigen::Vector3d Innovation;
 
-	Innovation = zVIO_ - Hodom_*x_;
+	Innovation = zVO_ - Hodom_*x_;
 
-	lastTime_vio_ = msg->header.stamp;
+	lastTime_vo_ = msg->header.stamp;
 
 	if (Innovation.norm()>2.0) {
-		ROS_INFO_STREAM(" KIMERA UPDATE SKIP DUE TO VELOCITY ERROR! " );
+		ROS_INFO_STREAM(" VO UPDATE SKIP DUE TO VELOCITY ERROR! " );
 		return;
 	}
 	P_ =(I-K*Hodom_)*P_;
-	x_ = x_ + K*(zVIO_ - Hodom_*x_);
+	x_ = x_ + K*(zVO_ - Hodom_*x_);
 
 
 }
@@ -351,7 +362,7 @@ void SensorFusion::kimeraCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 void SensorFusion::initializationStatus_()
 {
  std_msgs::Int64 status;
-	if (!firstKimera_) {
+	if (!firstVO_) {
 		status.data=INITIALIZED;
 	}
 	else {
