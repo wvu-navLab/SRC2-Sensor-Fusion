@@ -30,7 +30,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
-	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
+	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstVO_ = true;
 	firstWO_ = true;
 	firstIMU_= true;
@@ -79,7 +79,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 
 	double sigWO = .05;
-	double sigVO = .05;
+	double sigVO = .1;
 	Rwo_ << pow(sigWO,2), 0, 0,
 	        0, pow(sigWO,2), 0,
                 0, 0, pow(sigWO,2);
@@ -305,7 +305,10 @@ void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& 
 void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-	if(!firstIMU_) firstVO_=false;
+	if(!firstIMU_){
+		firstVO_=false;
+		averageIMU_=false;
+	}
 
 	// std::cout << " Kimera Callback " << std::endl;
 	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
