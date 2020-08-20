@@ -222,7 +222,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
-        if((pitch*180/3.1414926) > 15){
+        if((pitch*180/3.1414926) > 90){
                 ROS_INFO("Skipping Wheel Odom Update due to High Pitch %f ",pitch*180/3.1414926);
         }
 	else{
@@ -268,9 +268,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
 		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vo_.toSec() );
 		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec()) );
-	//	std_srvs::Trigger trig;
-	//	clt_restart_kimera_.call(trig);
-	//	lastTime_vio_=msg->header.stamp;
+		std_srvs::Trigger trig;
+		clt_restart_kimera_.call(trig);
+		lastTime_vo_=msg->header.stamp;
 
 
 	}
