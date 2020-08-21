@@ -1,2 +1,4 @@
 odometry_child_frame_id : "excavator_1_tf/base_footprint"
 odometry_frame_id : "excavator_1_tf/odom"
+position_update_topic : "excavator_1/position_update"
+robot_name : "excavator"

@@ -60,6 +60,7 @@ private:
     bool firstWO_;
     bool firstVO_;
     bool firstIMU_;
+    bool init_true_pose_;
 
     int initialized_;
 

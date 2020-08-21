@@ -7,6 +7,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 {
 
     std::string node_name = "sensor_fusion";
+		std::string robot_name;
 
 
 
@@ -27,6 +28,11 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
        ros::shutdown();
        exit(1);
      }
+     if(ros::param::get(node_name+"/robot_name", robot_name)==false){
+        ROS_FATAL("No parameter 'robot_name' specified");
+        ros::shutdown();
+        exit(1);
+      }
 
 	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
@@ -34,6 +40,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	firstVO_ = true;
 	firstWO_ = true;
 	firstIMU_= true;
+	init_true_pose_=false;
 	incCounter_=0;
 	rollInc_=0;
 	pitchInc_=0;
@@ -50,7 +57,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("localization/odometry/sensor_fusion",1); //Robot namespace here
 
-	pubStatus_= nh_.advertise<std_msgs::Int64>("state_machine/localized_base",100);
+	pubStatus_= nh_.advertise<std_msgs::Int64>("state_machine/localized_base_"+robot_name,100);
 
 
 	double sigVel = .1;
@@ -69,7 +76,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 		  0, 0, 0, 0, 0, 1;
 
 	Hposition_ << 1, 0, 0, 0, 0, 0,
-		      0, 1, 0, 0, 0, 0, 
+		      0, 1, 0, 0, 0, 0,
 		      0, 0, 1, 0, 0, 0;
 
 	double sigPosition = .2;
@@ -189,8 +196,13 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                       vn_imu.x(),
                       vn_imu.y(),
                       vn_imu.z();
+
+											// if (!isnan(x_(0))) {
+												init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
+											// }
+
         }
-	
+
 
 	// std::cout <<"Wheel Odom Callback " << std::endl;
 	if(averageIMU_){
@@ -365,7 +377,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 void SensorFusion::initializationStatus_()
 {
  std_msgs::Int64 status;
-	if (!firstVO_) {
+	if (init_true_pose_) {
 		status.data=INITIALIZED;
 	}
 	else {

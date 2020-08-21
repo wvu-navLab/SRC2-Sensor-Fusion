@@ -1,2 +1,4 @@
 odometry_child_frame_id : "hauler_1_tf/base_footprint"
 odometry_frame_id : "hauler_1_tf/odom"
+position_update_topic : "hauler_1/position_update"
+robot_name : "hauler"
