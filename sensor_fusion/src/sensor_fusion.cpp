@@ -36,7 +36,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
-	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
+	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstVO_ = true;
 	firstWO_ = true;
 	firstIMU_= true;
@@ -47,7 +47,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	yawInc_=0;
 	// initialized_=NOT_INITIALIZED;
 
-	subVO_=nh_.subscribe("/kimera_vio_ros/odometry",1, &SensorFusion::voCallback_, this);
+	subVO_=nh_.subscribe("vo",1, &SensorFusion::voCallback_, this);
 
 	subImu_ = nh_.subscribe("imu_filtered",10,&SensorFusion::imuCallback_,this); //Robot namespace here
 
@@ -86,7 +86,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 
 	double sigWO = .05;
-	double sigVO = .1;
+	double sigVO = .15;
 	Rwo_ << pow(sigWO,2), 0, 0,
 	        0, pow(sigWO,2), 0,
                 0, 0, pow(sigWO,2);
@@ -295,7 +295,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg){
 
-	 // kimera measurement update
+	 
         zPosition_(0,0)= msg->position.x;
         zPosition_(1,0)= msg->position.y;
         zPosition_(2,0)= msg->position.z;
@@ -322,7 +322,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	}
 
-	// std::cout << " Kimera Callback " << std::endl;
+	std::cout << " WVU Callback " << std::endl;
 	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
