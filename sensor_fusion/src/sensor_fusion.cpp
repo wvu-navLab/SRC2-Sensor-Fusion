@@ -34,9 +34,9 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
         exit(1);
       }
 
-	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
+//	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
-	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
+	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstVO_ = true;
 	firstWO_ = true;
 	firstIMU_= true;
@@ -280,8 +280,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
 		ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vo_.toSec() );
 		ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec()) );
-		std_srvs::Trigger trig;
-		clt_restart_kimera_.call(trig);
+//		std_srvs::Trigger trig;
+//		clt_restart_kimera_.call(trig);
 		lastTime_vo_=msg->header.stamp;
 
 
@@ -364,7 +364,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	lastTime_vo_ = msg->header.stamp;
 
-	if (Innovation.norm()>2.0) {
+	if (Innovation.norm()>.5) {
 		ROS_INFO_STREAM(" VO UPDATE SKIP DUE TO VELOCITY ERROR! " );
 		return;
 	}
