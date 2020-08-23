@@ -36,7 +36,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
-	averageIMU_ = true; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
+	averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 	firstVO_ = true;
 	firstWO_ = true;
 	firstIMU_= true;
@@ -319,7 +319,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	if(!firstIMU_){
 		firstVO_=false;
-		averageIMU_=false;
+
 	}
 
 	// std::cout << " Kimera Callback " << std::endl;
