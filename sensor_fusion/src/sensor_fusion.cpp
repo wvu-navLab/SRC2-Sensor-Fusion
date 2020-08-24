@@ -76,13 +76,11 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 		  0, 0, 0, 0, 0, 1;
 
 	Hposition_ << 1, 0, 0, 0, 0, 0,
-		      0, 1, 0, 0, 0, 0,
-		      0, 0, 1, 0, 0, 0;
+		      0, 1, 0, 0, 0, 0;
 
-	double sigPosition = .2;
-	Rposition_ << pow(sigPosition,2), 0, 0,
-		      0, pow(sigPosition,2), 0,
-		      0, 0, pow(sigPosition,2);
+	double sigPosition = .5;
+	Rposition_ << pow(sigPosition,2), 0,
+		      0, pow(sigPosition,2);
 
 
 	double sigWO = .05;
@@ -197,8 +195,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                       vn_imu.y(),
                       vn_imu.z();
 
-											// if (!isnan(x_(0))) {
-												init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
+		// if (!isnan(x_(0))) {
+		init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
 											// }
 
         }
@@ -296,13 +294,12 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg){
 
 	 
-        zPosition_(0,0)= msg->position.x;
-        zPosition_(1,0)= msg->position.y;
-        zPosition_(2,0)= msg->position.z;
-        Eigen::MatrixXd S(3,3);
+        zPosition_(0,0)= x_[0]+msg->position.x;
+        zPosition_(1,0)= x_[1]+msg->position.y;
+        Eigen::MatrixXd S(2,2);
         S = Rposition_ + Hposition_*P_*Hposition_.transpose();
 
-        Eigen::MatrixXd K(6,3);
+        Eigen::MatrixXd K(6,2);
         K = (P_*Hposition_.transpose())*S.inverse();
         Eigen::MatrixXd I(6,6);
         I.setIdentity();

@@ -92,9 +92,9 @@ private:
     Eigen::Matrix <double, 3,1> zVO_;
     Eigen::Matrix <double, 3,1> zWO_;
 
-    Eigen::Matrix <double, 3, 6> Hposition_;
-    Eigen::Matrix <double, 3, 1> zPosition_;
-    Eigen::Matrix <double, 3, 3> Rposition_;
+    Eigen::Matrix <double, 2, 6> Hposition_;
+    Eigen::Matrix <double, 2, 1> zPosition_;
+    Eigen::Matrix <double, 2, 2> Rposition_;
 
     void publishOdom_();
 
