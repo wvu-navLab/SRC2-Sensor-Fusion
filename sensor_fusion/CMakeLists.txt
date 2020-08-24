@@ -154,6 +154,10 @@ add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
 target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
 # add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp)
 
+
+add_executable(homing_update src/homing_update.cpp)
+target_link_libraries(homing_update ${catkin_LIBRARIES})
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use

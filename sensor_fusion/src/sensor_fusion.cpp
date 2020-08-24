@@ -7,7 +7,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 {
 
     std::string node_name = "sensor_fusion";
-		std::string robot_name;
+    std::string robot_name;
 
 
 
