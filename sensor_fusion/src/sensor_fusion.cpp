@@ -293,9 +293,11 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg){
 
-	 
-        zPosition_(0,0)= x_[0]+msg->position.x;
-        zPosition_(1,0)= x_[1]+msg->position.y;
+	
+	ROS_WARN("Homing Update in Sensor Fusion");
+
+        zPosition_(0,0)=x_[0]+ msg->position.x;
+        zPosition_(1,0)=x_[1]+ msg->position.y;
         Eigen::MatrixXd S(2,2);
         S = Rposition_ + Hposition_*P_*Hposition_.transpose();
 

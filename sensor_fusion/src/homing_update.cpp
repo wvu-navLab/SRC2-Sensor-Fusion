@@ -5,7 +5,7 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 {
 	firstCallback_=true;
 
-	pubMeasurementUpdate_ = nh_.advertise<geometry_msgs::Point>("position_update",10);
+	pubMeasurementUpdate_ = nh_.advertise<geometry_msgs::Pose>("position_update",10);
 	subBaseLocation_ = nh_.subscribe("base_location",10, &HomingUpdate::baseLocationCallback_, this);
 
 
