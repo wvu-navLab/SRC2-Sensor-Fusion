@@ -5,31 +5,47 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 {
 	firstCallback_=true;
 
+	baseLocationClient_ = nh_.serviceClient<range_to_base::LocationOfBase>("location_of_base_service");
+	homingUpdateServer_ = nh_.advertiseService("homing",&HomingUpdate::homingUpdate_,this);
+
 	pubMeasurementUpdate_ = nh_.advertise<geometry_msgs::Pose>("position_update",10);
-	subBaseLocation_ = nh_.subscribe("base_location",10, &HomingUpdate::baseLocationCallback_, this);
+	
 
 
 }
 
-void HomingUpdate::baseLocationCallback_(const geometry_msgs::Point::ConstPtr& msg){
+bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sensor_fusion::HomingUpdate::Response &res){
 
-	if(firstCallback_){
-		
-		baseStationLocation_.x=msg->x;
-		baseStationLocation_.y=msg->y;
-		baseStationLocation_.z = 0.0;
-		ROS_INFO(" Saving Base Station as Landmark x:%f y:%f", baseStationLocation_.x, baseStationLocation_.y);
-		firstCallback_= false;
-	}else{
+	
+	range_to_base::LocationOfBase srv;
 
-		// our measurement is the relative error in x and y
-		measurementUpdate_.position.x=baseStationLocation_.x - msg->x;
-		measurementUpdate_.position.y=baseStationLocation_.y - msg->y;
-		measurementUpdate_.position.z= baseStationLocation_.z - msg->z; // z isnt actually used...
-		pubMeasurementUpdate_.publish(measurementUpdate_);
+	srv.request.angle = 0.4;
+
+	baseLocationClient_.call(srv);
+	
+	if(req.initializeLandmark){
+		 baseStationLocation_.x=srv.response.position.x;
+                baseStationLocation_.y=srv.response.position.y;
+                baseStationLocation_.z = 0.0;
+                ROS_INFO(" Saving Base Station as Landmark x:%f y:%f", baseStationLocation_.x, baseStationLocation_.y);
+		res.success=true;
+	}
+	else {
+	   // our measurement is the relative error in x and y
+                measurementUpdate_.position.x=baseStationLocation_.x - srv.response.position.x;
+                measurementUpdate_.position.y=baseStationLocation_.y - srv.response.position.y;
+                measurementUpdate_.position.z= baseStationLocation_.z - 0.0; // z isnt actually used...
+                pubMeasurementUpdate_.publish(measurementUpdate_);
+		res.success =true;
 
 	}
+
+	return true;
+
+
 }
+
+
 
 int main(int argc, char **argv)
 {
