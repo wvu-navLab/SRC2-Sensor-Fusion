@@ -13,7 +13,8 @@
 KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
 	: nh_(nh)
 {
-	dt_ = 0.2;
+    roverStatic_=false; 
+    dt_ = 0.2;
     ros::Time time_now = ros::Time::now();
 
     firstIMUCallback_=true;
@@ -36,7 +37,7 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
             0, 0, 0, 0, 0, pow(sigma_biases,2);
 
 	subImu = nh_.subscribe("imu",10,&KFAttitudeGyro::imuCallback,this);
-    subOdom = nh_.subscribe("odometry/truth", 1000, &KFAttitudeGyro::odometryCallback, this);
+
 
     pubOdomRoll = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/roll",1);
     pubOdomPitch = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/pitch",1);
@@ -56,26 +57,22 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
 
     last_time_ = time_now.toSec();
 
+    toggleStaticServer_ = nh_.advertiseService("sensor_fusion/toggle_rover_static",&KFAttitudeGyro::toggleStaticRover_,this);
+
 }
 
-void KFAttitudeGyro::odometryCallback(const nav_msgs::Odometry::ConstPtr &msg)
-{
-    ros::Time time_now = msg->header.stamp;
+bool KFAttitudeGyro::toggleStaticRover_(sensor_fusion::RoverStatic::Request &req, sensor_fusion::RoverStatic::Response &res){
 
-	double roll_odom, pitch_odom, yaw_odom;
-    tf::Quaternion q(
-                    msg->pose.pose.orientation.x,
-                    msg->pose.pose.orientation.y,
-                    msg->pose.pose.orientation.z,
-                    msg->pose.pose.orientation.w
-                    );
+	roverStatic_=req.rover_static;
+	if(req.rover_static){
+		ROS_INFO("Turning ON Rover Static Condition");
+	} 
+	else{
+		ROS_INFO("Turning OFF Rover Static Condition");
+	}
+	res.success = true;
+	return true;
 
-    tf::Matrix3x3 m(q);
-    m.getRPY(roll_odom, pitch_odom, yaw_odom);
-
-    publishStates(roll_odom, 0, time_now,  pubOdomRoll);
-    publishStates(pitch_odom, 0, time_now,  pubOdomPitch);
-    publishStates(yaw_odom, 0, time_now,  pubOdomYaw);
 }
 
 
@@ -137,56 +134,65 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     }
 
     // Non-linear update of state vector
-    x_(0) = x_(0) + angular_rates(0) * dt_;
-    x_(1) = x_(1) + angular_rates(1) * dt_;
-    x_(2) = x_(2) + angular_rates(2) * dt_;
-
+    if(!roverStatic_){
+    	x_(0) = x_(0) + angular_rates(0) * dt_;
+    	x_(1) = x_(1) + angular_rates(1) * dt_;
+    	x_(2) = x_(2) + angular_rates(2) * dt_;
+	}
     // Jacobian wrt to state vector
     Eigen::Matrix <double, 6, 6> F = Eigen::MatrixXd::Zero(6,6);
-    F(0,0) = 1 + (cos(x_(0))*tan(x_(1))*q_til - sin(x_(0))*tan(x_(1))*r_til) * dt_;
-    F(0,1) = (sin(x_(0))/cos(x_(1))/cos(x_(1))*q_til + cos(x_(0))/cos(x_(1))/cos(x_(1))*r_til) * dt_;
-    F(0,3) = - dt_;
-    F(0,4) = (- sin(x_(0))*tan(x_(0))) * dt_;
-    F(0,5) = (- cos(x_(0))*tan(x_(0))) * dt_;
+    
+    if(!roverStatic_){
+    	F(0,0) = 1 + (cos(x_(0))*tan(x_(1))*q_til - sin(x_(0))*tan(x_(1))*r_til) * dt_;
+    	F(0,1) = (sin(x_(0))/cos(x_(1))/cos(x_(1))*q_til + cos(x_(0))/cos(x_(1))/cos(x_(1))*r_til) * dt_;
+    	F(0,3) = - dt_;
+    	F(0,4) = (- sin(x_(0))*tan(x_(0))) * dt_;
+    	F(0,5) = (- cos(x_(0))*tan(x_(0))) * dt_;
 
-    F(1,0) = (sin(x_(0))*q_til + cos(x_(0))*r_til) * dt_;
-	F(1,1) = 1;
-    F(1,4) = (- cos(x_(0))) * dt_;
-    F(1,5) = (sin(x_(0))) * dt_;
+    	F(1,0) = (sin(x_(0))*q_til + cos(x_(0))*r_til) * dt_;
+		F(1,1) = 1;
+    	F(1,4) = (- cos(x_(0))) * dt_;
+    	F(1,5) = (sin(x_(0))) * dt_;
 
-    F(2,0) = (cos(x_(0))/cos(x_(1))*q_til - sin(x_(0))/cos(x_(1))*r_til) * dt_;
-    F(2,1) = (sin(x_(0))*tan(x_(1))/cos(x_(1))*q_til + cos(x_(0))*tan(x_(1))/cos(x_(1))*r_til) * dt_;
-    F(2,2) = 1;
-    F(2,3) = (- sin(x_(0))/cos(x_(1))) * dt_;
-    F(2,5) = (- cos(x_(0))/cos(x_(1))) * dt_;
+    	F(2,0) = (cos(x_(0))/cos(x_(1))*q_til - sin(x_(0))/cos(x_(1))*r_til) * dt_;
+    	F(2,1) = (sin(x_(0))*tan(x_(1))/cos(x_(1))*q_til + cos(x_(0))*tan(x_(1))/cos(x_(1))*r_til) * dt_;
+    	F(2,2) = 1;
+    	F(2,3) = (- sin(x_(0))/cos(x_(1))) * dt_;
+    	F(2,5) = (- cos(x_(0))/cos(x_(1))) * dt_;
 
-    F(3,3) = 1;
-    F(4,4) = 1;
-    F(5,5) = 1;
+    	F(3,3) = 1;
+    	F(4,4) = 1;
+    	F(5,5) = 1;
+    
+    
 
-    // Jacobian wrt to input vector
-    Eigen::Matrix <double, 6, 3> G = Eigen::MatrixXd::Zero(6,3);
-    G(0,0) = dt_;
-    G(0,1) = (sin(x_(0))*tan(x_(0))) * dt_;
-    G(0,2) = (cos(x_(0))*tan(x_(0))) * dt_;
+    	// Jacobian wrt to input vector
+    	Eigen::Matrix <double, 6, 3> G = Eigen::MatrixXd::Zero(6,3);
+    	G(0,0) = dt_;
+    	G(0,1) = (sin(x_(0))*tan(x_(0))) * dt_;
+    	G(0,2) = (cos(x_(0))*tan(x_(0))) * dt_;
 
-    G(1,0) = 0;
-    G(1,1) = (cos(x_(0))) * dt_;
-    G(1,2) = (- sin(x_(0))) * dt_;
+    	G(1,0) = 0;
+    	G(1,1) = (cos(x_(0))) * dt_;
+    	G(1,2) = (- sin(x_(0))) * dt_;
 
-    G(2,0) = 0;
-    G(2,1) = (sin(x_(0))/cos(x_(1))) * dt_;
-    G(2,2) = (cos(x_(0))/cos(x_(1))) * dt_;
-
+    	G(2,0) = 0;
+    	G(2,1) = (sin(x_(0))/cos(x_(1))) * dt_;
+    	G(2,2) = (cos(x_(0))/cos(x_(1))) * dt_;
+    
 	double sigma_attitude = 0.05;
-    Eigen::Matrix <double, 3, 3> Q;
-    Q   <<  pow(sigma_attitude,2), 0, 0,
+    	Eigen::Matrix <double, 3, 3> Q;
+   	 Q   <<  pow(sigma_attitude,2), 0, 0,
             0, pow(sigma_attitude,2), 0,
             0, 0, pow(sigma_attitude,2);
 
-    // Covariance Prediction
-    P_ = F * P_ * F.transpose() + G * Q * G.transpose();
-
+    	// Covariance Prediction
+    	P_ = F * P_ * F.transpose() + G * Q * G.transpose();
+    }
+    else {
+	P_ = F * P_ * F.transpose();
+    }
+    
     Eigen::Matrix <double, 3, 6> H;
     H   <<  1, 0, 0, 0, 0, 0,
             0, 1, 0, 0, 0, 0,

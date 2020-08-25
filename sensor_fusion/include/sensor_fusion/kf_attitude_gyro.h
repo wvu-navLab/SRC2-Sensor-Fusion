@@ -34,6 +34,7 @@
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_fusion/RoverStatic.h>
 
 class KFAttitudeGyro
 {
@@ -46,12 +47,15 @@ private:
     ros::NodeHandle & nh_;
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
-    void odometryCallback(const nav_msgs::Odometry::ConstPtr &msg);
+
     void publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub);
     void publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub);
 
     ros::Subscriber subImu;
-    ros::Subscriber subOdom;
+    ros::ServiceServer toggleStaticServer_;
+
+    bool roverStatic_;
+    bool toggleStaticRover_(sensor_fusion::RoverStatic::Request &req, sensor_fusion::RoverStatic::Response &res);
 
     ros::Publisher pubRollMeasured;
     ros::Publisher pubPitchMeasured;

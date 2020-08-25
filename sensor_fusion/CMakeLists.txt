@@ -64,6 +64,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    HomingUpdate.srv
+   RoverStatic.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -151,7 +152,7 @@ target_link_libraries(sensor_fusion ${catkin_LIBRARIES})
 
 add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
 target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
-# add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp)
+add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
 
 
 add_executable(homing_update src/homing_update.cpp)
