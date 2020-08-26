@@ -65,6 +65,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    HomingUpdate.srv
    RoverStatic.srv
+   GetTruePose.srv
 )
 
 ## Generate actions in the 'action' folder

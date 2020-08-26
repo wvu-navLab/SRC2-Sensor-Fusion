@@ -27,7 +27,8 @@
 #include <std_msgs/Int64.h>
 #include <tf/transform_broadcaster.h>
 //#include <kimera_vio_ros/KimeraVioRos.h>
-
+#include <sensor_fusion/GetTruePose.h>
+#include "srcp2_msgs/LocalizationSrv.h"
 #define INITIALIZED 1
 #define NOT_INITIALIZED 0
 
@@ -42,9 +43,14 @@ public:
 
 private:
 
+
     ros::NodeHandle & nh_;
 
     ros::Publisher pubOdom_, pubStatus_;
+
+    ros::ServiceClient src2GetTruePoseClient_;
+    ros::ServiceServer getTruePoseServer_;
+    bool getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req, sensor_fusion::GetTruePose::Response &res);
 
     // initial global body to nav attitude, from truth
     tf::Matrix3x3 R_imu_nav_o_;

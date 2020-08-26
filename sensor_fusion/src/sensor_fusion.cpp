@@ -33,6 +33,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
         ros::shutdown();
         exit(1);
       }
+	src2GetTruePoseClient_ = nh_.serviceClient<srcp2_msgs::LocalizationSrv>("get_true_pose");
+	getTruePoseServer_ = nh_.advertiseService("true_pose", &SensorFusion::getTruePoseFromSRC2_, this);
 
 //	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
@@ -151,6 +153,47 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 	firstIMU_=false;
 //	ROS_INFO("RPY %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
+
+bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req, sensor_fusion::GetTruePose::Response &res){
+
+	ROS_INFO(" Calling the SRC2 Get True Pose Service ");
+
+	srcp2_msgs::LocalizationSrv srv;
+	srv.request.call = true;
+	try{
+	    
+	    src2GetTruePoseClient_.call(srv);
+	    pose_= srv.response.pose;
+
+	    tf::Quaternion q(
+                    pose_.orientation.x,
+                    pose_.orientation.y,
+                    pose_.orientation.z,
+                    pose_.orientation.w
+                    );
+
+        	tf::Matrix3x3 R_init_true_b_n(q);
+		R_imu_nav_o_=R_init_true_b_n*R_body_imu_.transpose();
+		x_(0,0)=pose_.position.x;
+              	x_(1,0)= pose_.position.y;
+              	x_(2,0)=pose_.position.z;
+		// also re-init P
+		P_ = Q_;
+			      		
+		res.success = true;
+
+		return true;
+	}
+	catch(...){
+	        ROS_ERROR(" SRC2 Get True Pose Service Failed ");
+		res.success =false;
+		return false;
+	}
+}
+
+
+
+
 
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
