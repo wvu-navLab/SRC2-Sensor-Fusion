@@ -113,7 +113,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS message_runtime std_msgs nav_msgs geometry_msgs sensor_msgs
+  CATKIN_DEPENDS message_runtime message_generation std_msgs nav_msgs geometry_msgs sensor_msgs
 #  DEPENDS system_lib
 )
 
@@ -147,7 +147,7 @@ include_directories(
 
 add_executable(sensor_fusion src/sensor_fusion.cpp)
 target_link_libraries(sensor_fusion ${catkin_LIBRARIES})
-# add_dependencies(waypoint_nav sensor_fusion_generate_messages_cpp)
+add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
 
 add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
 target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
@@ -156,7 +156,7 @@ target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
 
 add_executable(homing_update src/homing_update.cpp)
 target_link_libraries(homing_update ${catkin_LIBRARIES})
-add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
+add_dependencies(homing_update sensor_fusion_generate_messages_cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -172,7 +172,7 @@ add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
 #   ${catkin_LIBRARIES}
 # )
 
-target_link_libraries(sensor_fusion 
+target_link_libraries(sensor_fusion
   ${catkin_LIBRARIES}
 )
 
