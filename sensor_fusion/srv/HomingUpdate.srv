@@ -1,3 +1,4 @@
 bool initializeLandmark
 ---
 bool success
+geometry_msgs/Point base_location

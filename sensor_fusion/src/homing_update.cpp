@@ -29,6 +29,7 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
                 baseStationLocation_.z = 0.0;
                 ROS_INFO(" Saving Base Station as Landmark x:%f y:%f", baseStationLocation_.x, baseStationLocation_.y);
 		res.success=true;
+		
 	}
 	else {
 	   // our measurement is the relative error in x and y
@@ -39,6 +40,9 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
 		res.success =true;
 
 	}
+
+	//also returning the estimate of the base station location
+	res.base_location = baseStationLocation_;
 
 	return true;
 
