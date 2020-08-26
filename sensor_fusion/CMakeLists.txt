@@ -152,7 +152,7 @@ add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
 
 add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
 target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
-add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
+add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp)
 
 
 add_executable(homing_update src/homing_update.cpp)
