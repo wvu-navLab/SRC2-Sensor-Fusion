@@ -1,7 +1,7 @@
 <launch>
   <group ns="scout_1">
 
-    <node pkg="sensor_fusion" name="sensor_fusion" type="sensor_fusion" output="screen" launch-prefix="bash -c 'sleep 5.0; $0 $@' ">
+    <node pkg="sensor_fusion" name="sensor_fusion" type="sensor_fusion" output="screen">
       <rosparam
        command="load"
        file="$(find sensor_fusion)/config/scout_sensor_fusion.yaml"
