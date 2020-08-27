@@ -159,6 +159,7 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 	ROS_INFO(" Calling the SRC2 Get True Pose Service ");
 
 	srcp2_msgs::LocalizationSrv srv;
+	if(req.start){
 	srv.request.call = true;
 	try{
 	    
@@ -188,6 +189,7 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 	        ROS_ERROR(" SRC2 Get True Pose Service Failed ");
 		res.success =false;
 		return false;
+	}
 	}
 }
 
