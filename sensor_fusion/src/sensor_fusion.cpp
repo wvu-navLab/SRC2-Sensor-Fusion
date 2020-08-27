@@ -160,13 +160,12 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 
 	srcp2_msgs::LocalizationSrv srv;
 	if(req.start){
-	srv.request.call = true;
-	try{
-	    
-	    src2GetTruePoseClient_.call(srv);
-	    pose_= srv.response.pose;
+		srv.request.call = true;
+	
+    	if(src2GetTruePoseClient_.call(srv)){
+	    	pose_= srv.response.pose;
 
-	    tf::Quaternion q(
+		    tf::Quaternion q(
                     pose_.orientation.x,
                     pose_.orientation.y,
                     pose_.orientation.z,
@@ -184,12 +183,12 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 		res.success = true;
 
 		return true;
-	}
-	catch(...){
+	   } 
+	   else {
 	        ROS_ERROR(" SRC2 Get True Pose Service Failed ");
 		res.success =false;
 		return false;
-	}
+		}
 	}
 }
 
