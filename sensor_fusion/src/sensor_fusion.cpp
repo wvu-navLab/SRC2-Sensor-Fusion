@@ -287,7 +287,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                                msg->twist.twist.linear.z);
 
 
-
+	v_body_ = vb_wo;
 
         // rotate kimeta body axis velocity into the nav frame
         tf::Vector3 vn_wo;
@@ -457,9 +457,10 @@ void SensorFusion::publishOdom_()
         updatedOdom.pose.pose.orientation.z = qup.z();
         updatedOdom.pose.pose.orientation.w = qup.w();
 
-        updatedOdom.twist.twist.linear.x = x_(3);
-        updatedOdom.twist.twist.linear.y = x_(4);
-        updatedOdom.twist.twist.linear.z = x_(5);
+	// put body_vel
+        updatedOdom.twist.twist.linear.x = v_body_.x();
+        updatedOdom.twist.twist.linear.y = v_body_.y();
+        updatedOdom.twist.twist.linear.z = v_body_.z();
 
         pubOdom_.publish(updatedOdom);
         pose_=updatedOdom.pose.pose;
