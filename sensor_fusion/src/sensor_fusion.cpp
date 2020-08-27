@@ -217,7 +217,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                 //since kimera is init with true pose, pick up true global attitude on first call
                 // later we can get this directly from get true pose
 
-/*
+
                 R_imu_nav_o_ = R_wo_b_n*R_body_imu_.transpose();
 
                 pose_ = msg->pose.pose;
@@ -242,7 +242,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		// if (!isnan(x_(0))) {
 		init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
 											// }
-*/
+
         }
 
 
