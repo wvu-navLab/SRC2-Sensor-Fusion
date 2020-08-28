@@ -365,7 +365,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	}
 
-	std::cout << " WVU Callback " << std::endl;
+	//std::cout << " WVU Callback " << std::endl;
 	//TODO: if pose NaN, then stop the rover, restart kimera with the latest pose (the one before NaN)
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
@@ -447,7 +447,7 @@ void SensorFusion::publishOdom_()
 	double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         // ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
-        ROS_INFO_STREAM(" state x: " << x_.transpose() );
+      //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
         updatedOdom.pose.pose.position.x = x_(0);
         updatedOdom.pose.pose.position.y = x_(1);
         updatedOdom.pose.pose.position.z = x_(2);
