@@ -79,6 +79,7 @@ private:
     ros::Subscriber subImu_;
     ros::Subscriber subWheelOdom_;
     ros::Subscriber subPositionUpdate_;
+    ros::Subscriber subDrivingMode_;
 
     double rollInc_;
     double pitchInc_;
@@ -89,6 +90,7 @@ private:
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg);
+    void drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg);
 
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 6> P_;

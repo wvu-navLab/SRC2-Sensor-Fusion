@@ -55,6 +55,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	subWheelOdom_ = nh_.subscribe("dead_reckoning/odometry",1,&SensorFusion::wheelOdomCallback_,this);
 
+	subDrivingMode_ = nh_.subscribe("driving/driving_mode",1, &SensorFusion::drivingModeCallback_, this);
+
 	subPositionUpdate_ = nh_.subscribe(position_update_topic, 1, &SensorFusion::positionUpdateCallback_,this);
 
 	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("localization/odometry/sensor_fusion",1); //Robot namespace here
@@ -86,7 +88,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 
 	double sigWO = .05;
-	double sigVO = .15;
+	double sigVO = .5;
 	Rwo_ << pow(sigWO,2), 0, 0,
 	        0, pow(sigWO,2), 0,
                 0, 0, pow(sigWO,2);
@@ -161,7 +163,7 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 	srcp2_msgs::LocalizationSrv srv;
 	if(req.start){
 		srv.request.call = true;
-	
+
     	if(src2GetTruePoseClient_.call(srv)){
 	    	pose_= srv.response.pose;
 
@@ -179,11 +181,14 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
               	x_(2,0)=pose_.position.z;
 		// also re-init P
 		P_ = Q_;
-		init_true_pose_=true; 	      		
+		P_(0,0)=1e-6;
+		P_(1,1)=1e-6;
+		P_(2,2)=1e-6;
+		init_true_pose_=true;
 		res.success = true;
 
 		return true;
-	   } 
+	   }
 	   else {
 	        ROS_ERROR(" SRC2 Get True Pose Service Failed ");
 		res.success =false;
@@ -193,7 +198,50 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 }
 
 
+void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
+	int mode = msg->data;
+	//Stop
+	if(mode==0){
+		Q_(0,0)=0.0;
+		Q_(1,1)=0.0;
+		Q_(2,2)=0.0;
+		Q_(3,3)=0.0;
+		Q_(4,4)=0.0;
+		Q_(5,5)=0.0;
+	}
+	//crab
+	else if(mode == 2){
 
+		Q_(0,0)=pow(0.01,2);
+		Q_(1,1)=pow(0.01,2);
+		Q_(2,2)=pow(0.05,2);
+		Q_(3,3)=pow(0.1,2);
+		Q_(4,4)=pow(0.1,2);
+		Q_(5,5)=pow(0.01,2);
+	}
+	// DACK
+	else if(mode== 3){
+
+		Q_(0,0)=pow(0.01,2);
+		Q_(1,1)=pow(0.01,2);
+		Q_(2,2)=pow(0.05,2);
+		Q_(3,3)=pow(0.1,2);
+		Q_(4,5)=pow(0.01,2);
+		Q_(5,5)=pow(0.01,2);
+	}
+	// turn in place
+	else if(mode== 4){
+
+		Q_(0,0)=pow(0.0,2);
+		Q_(1,1)=pow(0.0,2);
+		Q_(2,2)=pow(0.0,2);
+		Q_(3,3)=pow(0.0,2);
+		Q_(4,4)=pow(0.0,2);
+		Q_(5,5)=pow(0.1,2);
+	}
+
+
+}
 
 
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
@@ -249,7 +297,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	// std::cout <<"Wheel Odom Callback " << std::endl;
 	if(averageIMU_){
 		R_body_imu_.setRPY(rollInc_/incCounter_, pitchInc_/incCounter_, yawInc_/incCounter_);
-		rollInc_=0.0;
+					rollInc_=0.0;
         	pitchInc_=0.0;
         	yawInc_=0.0;
         	incCounter_=0.0;
@@ -270,7 +318,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
         F_(2,5) = dt;
 
         x_ = F_*x_;
-        P_ = F_*P_*F_.transpose()+ Q_;
+        P_ = F_*P_*F_.transpose()+ 	Q_;
 
 
 
@@ -313,7 +361,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 
 
-        lastTime_wo_=msg->header.stamp;
+  lastTime_wo_=msg->header.stamp;
 	publishOdom_();
 
 
@@ -337,7 +385,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg){
 
-	
+
 	ROS_WARN("Homing Update in Sensor Fusion");
 
         zPosition_(0,0)=x_[0]+ msg->position.x;
