@@ -82,7 +82,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	Hposition_ << 1, 0, 0, 0, 0, 0,
 		      0, 1, 0, 0, 0, 0;
 
-	double sigPosition = .1;
+	double sigPosition = 1e-4;
 	Rposition_ << pow(sigPosition,2), 0,
 		      0, pow(sigPosition,2);
 
