@@ -337,7 +337,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                                msg->twist.twist.linear.z);
 
 
-	v_body_ = vb_wo;
+	// v_body_ = vb_wo;
 
         // rotate kimeta body axis velocity into the nav frame
         tf::Vector3 vn_wo;
@@ -468,6 +468,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	P_ =(I-K*Hodom_)*P_;
 	x_ = x_ + K*(zVO_ - Hodom_*x_);
 
+	tf::Vector3	vb_vo_(x_[3],x_[4],x_[5]);
 
 }
 
@@ -505,8 +506,8 @@ void SensorFusion::publishOdom_()
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
 
 				//slip check
-				if (v_body_.x()!=0.0 || status_.data==INITIALIZED) {
-					slip.point.x = (v_body_.x() - vb_vo_.x()) / v_body_.x();
+				if (vb_wo_.x()!=0.0 || status_.data==INITIALIZED) {
+					slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
 					slip.point.y = 0.0;
 					slip.point.z = 0.0;
 					slip.header.stamp = lastTime_wo_ ;
