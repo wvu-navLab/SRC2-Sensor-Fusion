@@ -289,9 +289,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                       vn_imu.y(),
                       vn_imu.z();
 
-		// if (!isnan(x_(0))) {
-		init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
-											// }
+
+
 
         }
 
@@ -529,7 +528,7 @@ void SensorFusion::publishOdom_()
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
 
 				//slip check
-				if (vb_wo_.x()!=0.0 || status_.data==INITIALIZED) {
+				if (vb_wo_.x()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .2 ) {
 					slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
 					slip.point.y = 0.0;
 					slip.point.z = 0.0;
