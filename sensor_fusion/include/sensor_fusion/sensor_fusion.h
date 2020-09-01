@@ -59,14 +59,7 @@ private:
     tf::Matrix3x3 R_body_imu_;
 
     tf::Matrix3x3 Rbn_;
-
-<<<<<<< HEAD
-    tf::Vector3 v_body_wo_;
-    tf::Vector3 v_body_vo_;
-=======
-    tf::Vector3 v_body_, vb_vo_;
->>>>>>> f2fc52f55e7ebe6ab2f39b758bb9781ff4219d06
-
+    tf::Vector3 vb_wo_, vb_vo_;
     // pose estimate, saved over time to integrate position
     geometry_msgs::Pose pose_;
 
