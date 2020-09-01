@@ -320,11 +320,31 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
         F_(2,5) = dt;
 
         x_ = F_*x_;
-        P_ = F_*P_*F_.transpose()+ 	Q_;
+				Eigen::MatrixXd G(6,6);
+				G(0,0)=1.0;
+				G(1,1)=1.0;
+				G(2,2)=1.0;
+				tf::Vector3 row;
+
+				row=Rbn_[0];
+				G(3,3)= row.x();
+				G(3,4)= row.y();
+				G(3,5)= row.z();
+				row=Rbn_[1];
+				G(4,3)= row.x();
+				G(4,4)= row.y();
+				G(4,5)= row.z();
+				row=Rbn_[2];
+				G(5,3)= row.x();
+				G(5,4)= row.y();
+				G(5,5)= row.z();
+
+
+        P_ = F_*P_*F_.transpose()+ 	G*Q_*G.transpose();
 
 
 
-	double roll, pitch, yaw;
+	      double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         if((pitch*180/3.1414926) > 90){
                 ROS_INFO("Skipping Wheel Odom Update due to High Pitch %f ",pitch*180/3.1414926);
@@ -333,8 +353,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 
 	tf::Vector3 vb_wo( msg->twist.twist.linear.x,
-                               msg->twist.twist.linear.y,
-                               msg->twist.twist.linear.z);
+                     msg->twist.twist.linear.y,
+                     msg->twist.twist.linear.z);
 
 
 	// v_body_ = vb_wo;
@@ -534,7 +554,7 @@ void SensorFusion::publishOdom_()
 				v_body_ekf= Rbn_.transpose()*v_nav_ekf;
         updatedOdom.twist.twist.linear.x = v_body_ekf.x();
         updatedOdom.twist.twist.linear.y = v_body_ekf.y();
-        updatedOdom.twist.twist.linear.z = v_body_ekf.x();
+        updatedOdom.twist.twist.linear.z = v_body_ekf.z();
 
         pubOdom_.publish(updatedOdom);
 				pubSlip_.publish(slip);
