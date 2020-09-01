@@ -76,6 +76,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	      0, 0, 0, 0, 0, pow(sigVel,2);
 
 	P_ = Q_;
+	driving_mode_=0;
 
 	Hodom_ << 0, 0, 0, 1, 0, 0,
 	          0, 0, 0, 0, 1, 0,
@@ -88,7 +89,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 	Rposition_ << pow(sigPosition,2), 0,
 		      0, pow(sigPosition,2);
 
-
+  double slip_=0;
 	double sigWO = .05;
 	double sigVO = .5;
 	Rwo_ << pow(sigWO,2), 0, 0,
@@ -201,9 +202,9 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 
 
 void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
-	int mode = msg->data;
+	driving_mode_ = msg->data;
 	//Stop
-	if(mode==0 || mode==4){
+	if(driving_mode_==0 || driving_mode_==4){
 		Q_(0,0)=0.0;
 		Q_(1,1)=0.0;
 		Q_(2,2)=0.0;
@@ -212,7 +213,7 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 		Q_(5,5)=0.0;
 	}
 	//crab
-	else if(mode == 2){
+	else if(driving_mode_ == 1){
 
 		Q_(0,0)=pow(0.01,2);
 		Q_(1,1)=pow(0.01,2);
@@ -222,17 +223,17 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 		Q_(5,5)=pow(0.01,2);
 	}
 	// DACK
-	else if(mode== 3){
+	else if(driving_mode_== 2){
 
 		Q_(0,0)=pow(0.01,2);
 		Q_(1,1)=pow(0.01,2);
 		Q_(2,2)=pow(0.05,2);
 		Q_(3,3)=pow(0.1,2);
-		Q_(4,5)=pow(0.01,2);
+		Q_(4,4)=pow(0.01,2);
 		Q_(5,5)=pow(0.01,2);
 	}
 	// turn in place
-	else if(mode== 4){
+	else if(driving_mode_== 3){
 
 		Q_(0,0)=pow(0.0,2);
 		Q_(1,1)=pow(0.0,2);
@@ -339,7 +340,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 				G(5,3)= row.x();
 				G(5,4)= row.y();
 				G(5,5)= row.z();
-		
+
 
         P_ = F_*P_*F_.transpose()+ G*Q_*G.transpose();
 
@@ -347,18 +348,20 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	      double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
-        if((pitch*180/3.1414926) > 90){
-                ROS_INFO("Skipping Wheel Odom Update due to High Pitch %f ",pitch*180/3.1414926);
+        if((pitch*180/3.1414926) >30){
+                ROS_WARN("Skipping Wheel Odom Update Pitch: %f Slip: %f",pitch*180/3.1414926, slip_);
+								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
+								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
         }
-	else{
+				else{
 
 
-	tf::Vector3 vb_wo( msg->twist.twist.linear.x,
+						tf::Vector3 vb_wo( msg->twist.twist.linear.x,
                      msg->twist.twist.linear.y,
                      msg->twist.twist.linear.z);
 
 
-	vb_wo_ = vb_wo;
+										 vb_wo_ = vb_wo;
 
         // rotate kimeta body axis velocity into the nav frame
         tf::Vector3 vn_wo;
@@ -537,6 +540,7 @@ void SensorFusion::publishOdom_()
 					slip.header.stamp = lastTime_wo_ ;
 					slip.header.frame_id = odometry_frame_id;
 					pubSlip_.publish(slip);
+					slip_ = fabs(slip.point.x);
 					// ROS_INFO_STREAM ("slip="<<slip);
 					// ROS_INFO_STREAM ("v_body_.x()="<<v_body_.x());
 					// ROS_INFO_STREAM ("vb_vo_.x()="<<vb_vo_.x());

@@ -106,6 +106,8 @@ private:
     Eigen::Matrix <double, 2, 2> Rposition_;
 
     void publishOdom_();
+    int driving_mode_;
+    double slip_;
 
     tf::TransformBroadcaster odom_broadcaster_;
 
