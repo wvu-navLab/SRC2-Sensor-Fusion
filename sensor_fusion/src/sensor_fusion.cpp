@@ -268,7 +268,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                 // later we can get this directly from get true pose
 
 
-                R_imu_nav_o_ = R_wo_b_n*R_body_imu_.transpose();
+                R_imu_nav_o_ = R_body_imu_.transpose();
 
                 pose_ = msg->pose.pose;
 
@@ -320,12 +320,14 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
         x_ = F_*x_;
 				Eigen::MatrixXd G(6,6);
+				G.setZero();
 				G(0,0)=1.0;
 				G(1,1)=1.0;
 				G(2,2)=1.0;
 				tf::Vector3 row;
 
 				row=Rbn_.getRow(0);
+
 				G(3,3)= row.x();
 				G(3,4)= row.y();
 				G(3,5)= row.z();
@@ -337,9 +339,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 				G(5,3)= row.x();
 				G(5,4)= row.y();
 				G(5,5)= row.z();
+		
 
-
-        P_ = F_*P_*F_.transpose()+ 	Q_;//G*Q_*G.transpose();
+        P_ = F_*P_*F_.transpose()+ G*Q_*G.transpose();
 
 
 
@@ -528,7 +530,7 @@ void SensorFusion::publishOdom_()
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
 
 				//slip check
-				if (vb_wo_.x()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 ) {
+				if (vb_wo_.length()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 ) {
 					slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
 					slip.point.y = (vb_wo_.y() - vb_vo_.y()) / vb_wo_.y();
 					slip.point.z = (vb_wo_.z() - vb_vo_.z()) / vb_wo_.z();
