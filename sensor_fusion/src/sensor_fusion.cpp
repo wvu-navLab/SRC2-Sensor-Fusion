@@ -357,7 +357,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                      msg->twist.twist.linear.z);
 
 
-	// v_body_ = vb_wo;
+	vb_wo_ = vb_wo;
 
         // rotate kimeta body axis velocity into the nav frame
         tf::Vector3 vn_wo;
@@ -485,10 +485,13 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		ROS_INFO_STREAM(" VO UPDATE SKIP DUE TO VELOCITY ERROR! " );
 		return;
 	}
+  vb_vo_=vb_kimera;
+
 	P_ =(I-K*Hodom_)*P_;
 	x_ = x_ + K*(zVO_ - Hodom_*x_);
 
-	tf::Vector3	vb_vo_(x_[3],x_[4],x_[5]);
+	// tf::Vector3	vn_vo_(x_[3],x_[4],x_[5]);
+	// vb_vo_=Rbn_.transpose()*vn_vo_;
 
 }
 
