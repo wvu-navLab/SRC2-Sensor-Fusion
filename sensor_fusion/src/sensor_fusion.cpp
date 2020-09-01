@@ -528,12 +528,13 @@ void SensorFusion::publishOdom_()
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
 
 				//slip check
-				if (vb_wo_.x()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .2 ) {
+				if (vb_wo_.x()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 ) {
 					slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
-					slip.point.y = 0.0;
-					slip.point.z = 0.0;
+					slip.point.y = (vb_wo_.y() - vb_vo_.y()) / vb_wo_.y();
+					slip.point.z = (vb_wo_.z() - vb_vo_.z()) / vb_wo_.z();
 					slip.header.stamp = lastTime_wo_ ;
 					slip.header.frame_id = odometry_frame_id;
+					pubSlip_.publish(slip);
 					// ROS_INFO_STREAM ("slip="<<slip);
 					// ROS_INFO_STREAM ("v_body_.x()="<<v_body_.x());
 					// ROS_INFO_STREAM ("vb_vo_.x()="<<vb_vo_.x());
@@ -559,11 +560,11 @@ void SensorFusion::publishOdom_()
         updatedOdom.twist.twist.linear.z = v_body_ekf.z();
 
         pubOdom_.publish(updatedOdom);
-				pubSlip_.publish(slip);
+
         pose_=updatedOdom.pose.pose;
 
 
-	geometry_msgs::TransformStamped odom_trans;
+			geometry_msgs::TransformStamped odom_trans;
     	odom_trans.header.stamp = updatedOdom.header.stamp ;
     	odom_trans.header.frame_id = updatedOdom.header.frame_id;
     	odom_trans.child_frame_id = updatedOdom.child_frame_id ;
