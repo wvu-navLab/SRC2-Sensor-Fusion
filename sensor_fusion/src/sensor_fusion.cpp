@@ -59,9 +59,11 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 	subPositionUpdate_ = nh_.subscribe(position_update_topic, 1, &SensorFusion::positionUpdateCallback_,this);
 
-	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("localization/odometry/sensor_fusion",1); //Robot namespace here
+	pubOdom_ = nh_.advertise<nav_msgs::Odometry>("localization/odometry/sensor_fusion",1);
 
 	pubStatus_= nh_.advertise<std_msgs::Int64>("state_machine/localized_base_"+robot_name,100);
+
+	pubSlip_ = nh_.advertise<geometry_msgs::PointStamped>("localization/odometry/slip",1);
 
 
 	double sigVel = .1;
@@ -288,7 +290,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                       vn_imu.z();
 
 		// if (!isnan(x_(0))) {
-		init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
+		// init_true_pose_=true; // TODO: True pose should be called directly from the service! This is temporary.
 											// }
 
         }
@@ -436,6 +438,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	// rotate kimera body axis velocity into the nav frame
 	tf::Vector3 vn_kim;
 	vn_kim = Rbn_*vb_kimera;
+	vb_vo_=vb_kimera;
 
 
 	// kimera measurement update
@@ -467,21 +470,22 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 void SensorFusion::initializationStatus_()
 {
- std_msgs::Int64 status;
+ // std_msgs::Int64 status;
 	if (init_true_pose_) {
-		status.data=INITIALIZED;
+		status_.data=INITIALIZED;
 	}
 	else {
-		status.data=NOT_INITIALIZED;
+		status_.data=NOT_INITIALIZED;
 	}
 
-        pubStatus_.publish(status);
+        pubStatus_.publish(status_);
 
 }
 
 void SensorFusion::publishOdom_()
 {
 	nav_msgs::Odometry updatedOdom;
+	geometry_msgs::PointStamped slip;
 
         updatedOdom.header.stamp = lastTime_wo_;
         updatedOdom.header.frame_id = odometry_frame_id;
@@ -496,6 +500,23 @@ void SensorFusion::publishOdom_()
         Rbn_.getRPY(roll,pitch,yaw);
         // ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
+
+				//slip check
+				if (v_body_.x()!=0.0 || status_.data==INITIALIZED) {
+					slip.point.x = (v_body_.x() - vb_vo_.x()) / v_body_.x();
+					slip.point.y = 0.0;
+					slip.point.z = 0.0;
+					slip.header.stamp = lastTime_wo_ ;
+					slip.header.frame_id = odometry_frame_id;
+					// ROS_INFO_STREAM ("slip="<<slip);
+					// ROS_INFO_STREAM ("v_body_.x()="<<v_body_.x());
+					// ROS_INFO_STREAM ("vb_vo_.x()="<<vb_vo_.x());
+
+				}
+
+
+
+
         updatedOdom.pose.pose.position.x = x_(0);
         updatedOdom.pose.pose.position.y = x_(1);
         updatedOdom.pose.pose.position.z = x_(2);
@@ -511,6 +532,7 @@ void SensorFusion::publishOdom_()
         updatedOdom.twist.twist.linear.z = v_body_.z();
 
         pubOdom_.publish(updatedOdom);
+				pubSlip_.publish(slip);
         pose_=updatedOdom.pose.pose;
 
 

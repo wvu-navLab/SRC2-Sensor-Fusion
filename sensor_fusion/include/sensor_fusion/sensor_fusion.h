@@ -46,7 +46,7 @@ private:
 
     ros::NodeHandle & nh_;
 
-    ros::Publisher pubOdom_, pubStatus_;
+    ros::Publisher pubOdom_, pubStatus_, pubSlip_;
 
     ros::ServiceClient src2GetTruePoseClient_;
     ros::ServiceServer getTruePoseServer_;
@@ -60,7 +60,7 @@ private:
 
     tf::Matrix3x3 Rbn_;
 
-    tf::Vector3 v_body_;
+    tf::Vector3 v_body_, vb_vo_;
 
     // pose estimate, saved over time to integrate position
     geometry_msgs::Pose pose_;
@@ -71,6 +71,7 @@ private:
     bool init_true_pose_;
 
     int initialized_;
+    std_msgs::Int64 status_;
 
     ros::Time lastTime_wo_;
     ros::Time lastTime_vo_;
