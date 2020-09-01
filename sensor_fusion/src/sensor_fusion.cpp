@@ -201,7 +201,7 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 	int mode = msg->data;
 	//Stop
-	if(mode==0){
+	if(mode==0 || mode==4){
 		Q_(0,0)=0.0;
 		Q_(1,1)=0.0;
 		Q_(2,2)=0.0;
@@ -335,13 +335,16 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
                                msg->twist.twist.linear.z);
 
 
-	v_body_ = vb_wo;
+	v_body_wo_ = vb_wo;
 
         // rotate kimeta body axis velocity into the nav frame
         tf::Vector3 vn_wo;
         vn_wo = Rbn_*vb_wo;
 
-
+ 	// if(v_body_wo_.distance(v_body_vo_)> .6 && v_body_wo_.length() > .4 && v_body_vo_.length() < .4 ){
+	//  	ROS_ERROR("Wheel Slip Detected in Sensor Fusion");
+	//  	return;
+ 	// }
 
 	// kimera measurement update
         zWO_(0,0)= vn_wo.x();
@@ -426,7 +429,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
         // get kimera velocity represented in body frame
 
-	tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
+				tf::Vector3 vb_kimera( msg->twist.twist.linear.x,
 			       msg->twist.twist.linear.y,
 			       msg->twist.twist.linear.z);
 
@@ -459,6 +462,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 		ROS_INFO_STREAM(" VO UPDATE SKIP DUE TO VELOCITY ERROR! " );
 		return;
 	}
+	v_body_vo_ = vb_kimera;
 	P_ =(I-K*Hodom_)*P_;
 	x_ = x_ + K*(zVO_ - Hodom_*x_);
 
@@ -492,7 +496,7 @@ void SensorFusion::publishOdom_()
         Rbn_.getRotation(qup);
 
 
-	double roll, pitch, yaw;
+				double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         // ROS_INFO("RPY in WO %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
@@ -506,15 +510,21 @@ void SensorFusion::publishOdom_()
         updatedOdom.pose.pose.orientation.w = qup.w();
 
 	// put body_vel
-        updatedOdom.twist.twist.linear.x = v_body_.x();
-        updatedOdom.twist.twist.linear.y = v_body_.y();
-        updatedOdom.twist.twist.linear.z = v_body_.z();
+
+				  tf::Vector3 v_body_ekf;
+
+					tf::Vector3	v_nav_ekf(x_[3],x_[4],x_[5]);
+
+				v_body_ekf= Rbn_.transpose()*v_nav_ekf;
+        updatedOdom.twist.twist.linear.x = v_body_ekf.x();
+        updatedOdom.twist.twist.linear.y = v_body_ekf.y();
+        updatedOdom.twist.twist.linear.z = v_body_ekf.x();
 
         pubOdom_.publish(updatedOdom);
         pose_=updatedOdom.pose.pose;
 
 
-	geometry_msgs::TransformStamped odom_trans;
+				geometry_msgs::TransformStamped odom_trans;
     	odom_trans.header.stamp = updatedOdom.header.stamp ;
     	odom_trans.header.frame_id = updatedOdom.header.frame_id;
     	odom_trans.child_frame_id = updatedOdom.child_frame_id ;
