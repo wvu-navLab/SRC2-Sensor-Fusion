@@ -326,21 +326,21 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 				G(2,2)=1.0;
 				tf::Vector3 row;
 
-				row=Rbn_[0];
+				row=Rbn_.getRow(0);
 				G(3,3)= row.x();
 				G(3,4)= row.y();
 				G(3,5)= row.z();
-				row=Rbn_[1];
+				row=Rbn_.getRow(1);
 				G(4,3)= row.x();
 				G(4,4)= row.y();
 				G(4,5)= row.z();
-				row=Rbn_[2];
+				row=Rbn_.getRow(2);
 				G(5,3)= row.x();
 				G(5,4)= row.y();
 				G(5,5)= row.z();
 
 
-        P_ = F_*P_*F_.transpose()+ 	G*Q_*G.transpose();
+        P_ = F_*P_*F_.transpose()+ 	Q_;//G*Q_*G.transpose();
 
 
 
