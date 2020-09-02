@@ -348,7 +348,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 	      double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
-        if((pitch*180/3.1414926) >30){
+        if((pitch*180/3.1414926) >20){
                 ROS_WARN("Skipping Wheel Odom Update Pitch: %f Slip: %f",pitch*180/3.1414926, slip_);
 								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
 								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
@@ -533,18 +533,36 @@ void SensorFusion::publishOdom_()
       //  ROS_INFO_STREAM(" state x: " << x_.transpose() );
 
 				//slip check
-				if (vb_wo_.length()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 ) {
-					slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
-					slip.point.y = (vb_wo_.y() - vb_vo_.y()) / vb_wo_.y();
-					slip.point.z = (vb_wo_.z() - vb_vo_.z()) / vb_wo_.z();
-					slip.header.stamp = lastTime_wo_ ;
-					slip.header.frame_id = odometry_frame_id;
-					pubSlip_.publish(slip);
-					slip_ = fabs(slip.point.x);
-					// ROS_INFO_STREAM ("slip="<<slip);
-					// ROS_INFO_STREAM ("v_body_.x()="<<v_body_.x());
-					// ROS_INFO_STREAM ("vb_vo_.x()="<<vb_vo_.x());
-
+				if (vb_wo_.length()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 )
+				{
+						if(slipTimer!=0)
+						{
+								slipTimer=ros::Time::now().toSec();
+						}
+						else
+						{
+								if (ros::Time::now().toSec() - slipTimer < 30 && slipCount_>30 )
+								{
+									ROS_ERROR_STREAM("SLIP DETECTED! Slip Count: " << slipCount_);
+									ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+									// pub State machine
+									// reset slipTimer_
+									// reset slipCount_
+									slipCount_=0;
+									slipTimer=0;
+								}
+						}
+						slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
+						slip.point.y = vb_wo_.x();
+						slip.point.z = vb_vo_.x();
+						slip.header.stamp = lastTime_wo_ ;
+						slip.header.frame_id = odometry_frame_id;
+						pubSlip_.publish(slip);
+						slip_ = fabs(slip.point.x);
+						slipCount_++;
+						// ROS_INFO_STREAM ("slip="<<slip);
+						// ROS_INFO_STREAM ("v_body_.x()="<<v_body_.x());
+						// ROS_INFO_STREAM ("vb_vo_.x()="<<vb_vo_.x());
 				}
 
         updatedOdom.pose.pose.position.x = x_(0);
