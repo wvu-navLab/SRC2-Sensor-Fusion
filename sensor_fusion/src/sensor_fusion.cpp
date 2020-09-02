@@ -250,7 +250,9 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-
+	if(driving_mode_==0){
+		return;
+	}
 	tf::Quaternion q(
                     msg->pose.pose.orientation.x,
                     msg->pose.pose.orientation.y,
