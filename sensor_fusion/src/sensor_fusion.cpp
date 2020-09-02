@@ -561,7 +561,7 @@ void SensorFusion::publishOdom_()
 						slip.point.z = vb_vo_.x();
 						slip.header.stamp = lastTime_wo_ ;
 						slip.header.frame_id = odometry_frame_id;
-						pubSlip_.publish(slip);
+						// pubSlip_.publish(slip);
 						slip_ = fabs(slip.point.x);
 						slipCount_++;
 						// ROS_INFO_STREAM ("slip="<<slip);
@@ -588,7 +588,7 @@ void SensorFusion::publishOdom_()
         updatedOdom.twist.twist.linear.z = v_body_ekf.z();
 
         pubOdom_.publish(updatedOdom);
-
+				pubSlip_.publish(slip);
         pose_=updatedOdom.pose.pose;
 
 
