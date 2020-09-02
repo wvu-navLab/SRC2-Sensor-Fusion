@@ -69,7 +69,7 @@ private:
     bool init_true_pose_;
 
     int initialized_;
-    int slipCount_;
+    int slipCount_=0;
     std_msgs::Int64 status_;
 
     ros::Time lastTime_wo_;
@@ -86,7 +86,7 @@ private:
     double pitchInc_;
     double yawInc_;
     double incCounter_;
-    double slipTimer;
+    double slipTimer =0;
 
     void voCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);

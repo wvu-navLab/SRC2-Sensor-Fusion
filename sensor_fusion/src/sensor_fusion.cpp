@@ -535,7 +535,7 @@ void SensorFusion::publishOdom_()
 				//slip check
 				if (vb_wo_.length()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 )
 				{
-						if(slipTimer!=0)
+						if(slipTimer==0)
 						{
 								slipTimer=ros::Time::now().toSec();
 						}
@@ -552,6 +552,8 @@ void SensorFusion::publishOdom_()
 									slipTimer=0;
 								}
 						}
+						// ROS_ERROR_STREAM("slipTimer " << slipTimer);
+						// 		 ROS_ERROR_STREAM("slipCount_ " << slipCount_);
 						slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
 						slip.point.y = vb_wo_.x();
 						slip.point.z = vb_vo_.x();
