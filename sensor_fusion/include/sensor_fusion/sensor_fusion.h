@@ -31,6 +31,8 @@
 #include "srcp2_msgs/LocalizationSrv.h"
 #define INITIALIZED 1
 #define NOT_INITIALIZED 0
+#define MOBILE 1
+#define IMMOBILE 0
 
 
 
@@ -46,7 +48,7 @@ private:
 
     ros::NodeHandle & nh_;
 
-    ros::Publisher pubOdom_, pubStatus_, pubSlip_;
+    ros::Publisher pubOdom_, pubStatus_, pubSlip_, pubMobility_;
 
     ros::ServiceClient src2GetTruePoseClient_;
     ros::ServiceServer getTruePoseServer_;
@@ -67,10 +69,12 @@ private:
     bool firstVO_;
     bool firstIMU_;
     bool init_true_pose_;
+    bool high_slip_flag_= false;
 
     int initialized_;
     int slipCount_=0;
     std_msgs::Int64 status_;
+    std_msgs::Int64 mobility_;
 
     ros::Time lastTime_wo_;
     ros::Time lastTime_vo_;
@@ -87,7 +91,8 @@ private:
     double yawInc_;
     double incCounter_;
     double slipTimer =0;
-
+    double yawTimer=0;
+    double yaw_pre=0;
     void voCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
