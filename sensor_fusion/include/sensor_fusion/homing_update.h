@@ -29,6 +29,7 @@ private:
 	bool firstCallback_;
 
 	ros::Publisher pubMeasurementUpdate_;
+	ros::Publisher pubBaseLocation_;
 	ros::ServiceServer homingUpdateServer_;
 	ros::ServiceClient baseLocationClient_;
 
@@ -39,4 +40,3 @@ private:
 };
 
 #endif
-
