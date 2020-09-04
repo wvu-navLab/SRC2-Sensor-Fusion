@@ -353,14 +353,25 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 	      double roll, pitch, yaw;
         Rbn_.getRPY(roll,pitch,yaw);
         if((pitch*180/3.1414926) >60){
-                ROS_WARN("Skipping Wheel Odom Update Pitch: %f Slip: %f",pitch*180/3.1414926, slip_);
+                ROS_WARN("Skipping Wheel Odom Update Pitch: %f",pitch*180/3.1414926);
 								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
 								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
 
         }
 				else{
 
+					if((pitch*180/3.1414926) >15){
+									ROS_ERROR(" Rover Climbing DOWN, Pitch: %f",pitch*180/3.1414926);
+									ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
+									ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
 
+					}
+					if((pitch*180/3.1414926) <-15){
+									ROS_ERROR(" Rover Climbing UP, Pitch: %f",pitch*180/3.1414926);
+									ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
+									ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+
+					}
 						tf::Vector3 vb_wo( msg->twist.twist.linear.x,
                      msg->twist.twist.linear.y,
                      msg->twist.twist.linear.z);
