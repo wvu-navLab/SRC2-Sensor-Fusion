@@ -1,0 +1,10 @@
+<launch>
+  <group ns="excavator_1">
+
+    <node pkg="sensor_fusion" name="homing_update" type="homing_update" output="screen">
+
+    </node>
+
+  </group>
+
+</launch>
