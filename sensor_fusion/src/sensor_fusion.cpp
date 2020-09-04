@@ -252,14 +252,7 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-								tf::Quaternion q(
-																msg->pose.pose.orientation.x,
-																msg->pose.pose.orientation.y,
-																msg->pose.pose.orientation.z,
-																msg->pose.pose.orientation.w
-																);
-
-								tf::Matrix3x3 R_wo_b_n(q);
+						
 
 
 
