@@ -47,6 +47,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 								rollInc_=0;
 								pitchInc_=0;
 								yawInc_=0;
+								mobility_.data= MOBILE;
+
 								// initialized_=NOT_INITIALIZED;
 
 								subVO_=nh_.subscribe("vo",1, &SensorFusion::voCallback_, this);
@@ -252,7 +254,7 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
 
-						
+
 
 
 
@@ -343,12 +345,26 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								double roll, pitch, yaw;
 								Rbn_.getRPY(roll,pitch,yaw);
 								if((pitch*180/3.1414926) >60) {
-																ROS_WARN("Skipping Wheel Odom Update Pitch: %f Slip: %f",pitch*180/3.1414926, slip_);
+																ROS_WARN("Skipping Wheel Odom Update Pitch: %f",pitch*180/3.1414926);
 																ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
 																ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
 
 								}
 								else{
+
+																if((pitch*180/3.1414926) <-15) {
+																								ROS_ERROR("Robot Climbing Up! Pitch: %f",pitch*180/3.1414926);
+																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
+																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+
+																}
+
+																if((pitch*180/3.1414926) >15) {
+																								ROS_ERROR("Robot Climbing Down! Pitch: %f",pitch*180/3.1414926);
+																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
+																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+
+																}
 
 
 																tf::Vector3 vb_wo( msg->twist.twist.linear.x,
@@ -427,6 +443,7 @@ void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& 
 								I.setIdentity();
 								P_ =(I-K*Hposition_)*P_;
 								x_ = x_ + K*(zPosition_ - Hposition_*x_);
+								homingUpdateFlag_= true;
 
 
 }
@@ -534,65 +551,65 @@ void SensorFusion::publishOdom_()
 								//slip check
 
 
-								if (vb_wo_.length()!=0.0 && status_.data==INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 )
-								{
-																if(slipTimer==0)
-																{
-																								slipTimer=ros::Time::now().toSec();
-																}
-																else
-																{
-																								if (ros::Time::now().toSec() - slipTimer < 30 && slipCount_>30 )
-																								{
-																																ROS_ERROR_STREAM("SLIP DETECTED! Slip Count: " << slipCount_);
-																																ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
-																																high_slip_flag_=true;
 
-																																slipCount_=0;
-																																slipTimer=0;
-																								}
-																}
-																slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
-																slip.point.y = vb_wo_.x();
-																slip.point.z = vb_vo_.x();
-																slip.header.stamp = lastTime_wo_;
-																slip.header.frame_id = odometry_frame_id;
-																// pubSlip_.publish(slip);
-																slip_ = fabs(slip.point.x);
-																if (slip_ > 0.9) {
-																								slipCount_++;
-																								ROS_ERROR_STREAM("High Slip Detected: " << slip_);
-																								if (yawTimer==0)
-																								{
-																																yawTimer=ros::Time::now().toSec();
-																								}
-																								else
-																								{
-																																if (ros::Time::now().toSec()- yawTimer > 15 && (fabs(yaw_pre - yaw)< 0.05 || 6.28318- fabs(yaw_pre - yaw) < 0.05))
-																																{
-																																								ROS_ERROR_STREAM("Yaw Difference Trial in IF" <<fabs(yaw_pre-yaw));
-																																								ROS_ERROR_STREAM("YawNow in IF" <<yaw_pre);
-																																								ROS_ERROR_STREAM("Yaw in IF" <<yaw);
-																																								ROS_ERROR_STREAM("yawTimer dif " <<ros::Time::now().toSec()- yawTimer);
-																																								if (high_slip_flag_)
-																																								{
-																																																ROS_ERROR_STREAM("HIGH SLIP FLAG IS ALSO RAISED, slipCount_="<<slipCount_);
-																																																high_slip_flag_=false;
-																																								}
-																																								mobility_.data = IMMOBILE;
-																																								yawTimer=0;
-																																}
-																																// ROS_ERROR_STREAM("YawNow" <<yaw_pre);
-																																// ROS_ERROR_STREAM("Yaw" <<yaw);
-																																yaw_pre= yaw;
-																								}
-																}
-																else
-																{
-																								mobility_.data = MOBILE;
-																}
-																pubMobility_.publish(mobility_);
-								}
+if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ != 3)
+{
+	// mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at the previous step, it sends immobile again.
+  if (slipTimer == 0)
+	{
+    slipTimer = ros::Time::now().toSec();
+  }
+	else
+	{
+    if (ros::Time::now().toSec() - slipTimer < 30 && slipCount_ > 15)
+		{
+      ROS_ERROR_STREAM("Frequent Slip: Slip Count: " << slipCount_);
+      ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+      // ROS_ERROR_STREAM("DRIVING MODE IN SLIP"<<d
+      if (homingUpdateFlag_)
+			{
+        ROS_ERROR("Rover performed homing recently, skipping high slip flag");
+        homingUpdateFlag_ = false;
+      }
+			else
+			{
+        ROS_ERROR_STREAM("Frequent Slip Flag slipCount_=" << slipCount_);
+        mobility_.data = IMMOBILE;
+      }
+      slipCount_ = 0;
+      slipTimer = 0;
+    }
+		else
+		{
+			if (ros::Time::now().toSec() - slipTimer >30) {
+				slipTimer=0;
+				slipCount_ = 0;
+			}
+		mobility_.data = MOBILE;
+		}
+  }
+  slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
+  slip.point.y = vb_wo_.x();
+  slip.point.z = vb_vo_.x();
+  slip.header.stamp = lastTime_wo_;
+  slip.header.frame_id = odometry_frame_id;
+  // pubSlip_.publish(slip);
+  slip_ = fabs(slip.point.x);
+  if (slip_ > 0.9)
+	{
+    slipCount_++;
+    ROS_ERROR_STREAM("High Slip Detected: " << slip_);
+	}
+	ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+	ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
+	ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
+	ROS_ERROR_STREAM("Slip Count: " << slipCount_);
+  ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
+  pubMobility_.publish(mobility_);
+}
+
+
+
 
 								updatedOdom.pose.pose.position.x = x_(0);
 								updatedOdom.pose.pose.position.y = x_(1);

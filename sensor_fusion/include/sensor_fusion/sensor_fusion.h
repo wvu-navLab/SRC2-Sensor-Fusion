@@ -70,6 +70,7 @@ private:
     bool firstIMU_;
     bool init_true_pose_;
     bool high_slip_flag_= false;
+    bool homingUpdateFlag_=false;
 
     int initialized_;
     int slipCount_=0;
