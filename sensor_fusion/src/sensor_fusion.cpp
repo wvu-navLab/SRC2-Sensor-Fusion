@@ -353,9 +353,12 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								else{
 
 																if((pitch*180/3.1414926) <-15) {
-																								ROS_ERROR("Robot Climbing Up! Pitch: %f",pitch*180/3.1414926);
+																								ROS_WARN("Robot Climbing Up! Pitch: %f",pitch*180/3.1414926);
 																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
 																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+																								if((pitch*180/3.1414926) <-30){
+																									ROS_ERROR("Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
+																								}
 
 																}
 
@@ -554,14 +557,14 @@ void SensorFusion::publishOdom_()
 
 if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ != 3)
 {
-	// mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at the previous step, it sends immobile again.
+	mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at the previous step, it sends immobile again.
   if (slipTimer == 0)
 	{
     slipTimer = ros::Time::now().toSec();
   }
 	else
 	{
-    if (ros::Time::now().toSec() - slipTimer < 30 && slipCount_ > 15)
+    if (ros::Time::now().toSec() - slipTimer < 25 && slipCount_ > 25)
 		{
       ROS_ERROR_STREAM("Frequent Slip: Slip Count: " << slipCount_);
       ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
@@ -581,7 +584,7 @@ if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .
     }
 		else
 		{
-			if (ros::Time::now().toSec() - slipTimer >30) {
+			if (ros::Time::now().toSec() - slipTimer >25) {
 				slipTimer=0;
 				slipCount_ = 0;
 			}
