@@ -609,7 +609,7 @@ if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .
 	// ROS_ERROR_STREAM("Slip Count: " << slipCount_);
 	if (mobility_.data == 0) {
 		ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
-		ROS_ERROR("Sending immobility flag to Sensor Fusion"):
+		ROS_ERROR("Sending immobility flag to Sensor Fusion");
 	}
   // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
   pubMobility_.publish(mobility_);
