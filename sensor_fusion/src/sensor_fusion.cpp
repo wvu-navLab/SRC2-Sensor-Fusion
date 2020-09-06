@@ -65,7 +65,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 								pubStatus_= nh_.advertise<std_msgs::Int64>("state_machine/localized_base_"+robot_name,100);
 
-								pubMobility_= nh_.advertise<std_msgs::Int64>("state_machine/mobility_"+robot_name,100);
+								pubMobility_= nh_.advertise<std_msgs::Int64>("state_machine/mobility_"+robot_name,10);
 
 								pubSlip_ = nh_.advertise<geometry_msgs::PointStamped>("localization/odometry/slip",1);
 
@@ -363,7 +363,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																}
 
 																if((pitch*180/3.1414926) >15) {
-																								ROS_ERROR("Robot Climbing Down! Pitch: %f",pitch*180/3.1414926);
+																								ROS_WARN("Robot Climbing Down! Pitch: %f",pitch*180/3.1414926);
 																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
 																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
 
@@ -603,11 +603,15 @@ if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .
     slipCount_++;
     ROS_ERROR_STREAM("High Slip Detected: " << slip_);
 	}
-	ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
-	ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
-	ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
-	ROS_ERROR_STREAM("Slip Count: " << slipCount_);
-  ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
+	// ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+	// ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
+	// ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
+	// ROS_ERROR_STREAM("Slip Count: " << slipCount_);
+	if (mobility_.data == 0) {
+		ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
+		ROS_ERROR("Sending immobility flag to Sensor Fusion"):
+	}
+  // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
   pubMobility_.publish(mobility_);
 }
 
