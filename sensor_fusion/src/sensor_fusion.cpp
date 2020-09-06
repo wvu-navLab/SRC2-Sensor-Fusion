@@ -208,13 +208,21 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 								driving_mode_ = msg->data;
 								//Stop
-								if(driving_mode_==0 || driving_mode_==4) {
-																Q_(0,0)=0.0;
-																Q_(1,1)=0.0;
-																Q_(2,2)=0.0;
-																Q_(3,3)=0.0;
-																Q_(4,4)=0.0;
-																Q_(5,5)=0.0;
+								// if(driving_mode_==4) {
+								// 								Q_(0,0)=0.0;
+								// 								Q_(1,1)=0.0;
+								// 								Q_(2,2)=0.0;
+								// 								Q_(3,3)=0.0;
+								// 								Q_(4,4)=0.0;
+								// 								Q_(5,5)=0.0;
+								// }
+								if(driving_mode_==0) {
+																Q_(0,0)=pow(0.01,2);
+																Q_(1,1)=pow(0.01,2);
+																Q_(2,2)=pow(0.05,2);
+																Q_(3,3)=pow(0.1,2);
+																Q_(4,4)=pow(0.01,2);
+																Q_(5,5)=pow(0.01,2);
 								}
 								//crab
 								else if(driving_mode_ == 1) {
@@ -246,6 +254,23 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 																Q_(4,4)=pow(0.0,2);
 																Q_(5,5)=pow(0.1,2);
 								}
+								else if(driving_mode_==4) {
+																Q_(0,0)=0.0;
+																Q_(1,1)=0.0;
+																Q_(2,2)=0.0;
+																Q_(3,3)=0.0;
+																Q_(4,4)=0.0;
+																Q_(5,5)=0.0;
+								}
+								// else if (driving_mode_ == 0)
+								// {
+								// 	Q_(0,0)=0.0;
+								// 	Q_(1,1)=0.0;
+								// 	Q_(2,2)=0.0;
+								// 	Q_(3,3)=pow(0.1,2);
+								// 	Q_(4,4)=pow(0.1,2);
+								// 	Q_(5,5)=pow(0.01,2);
+								// }
 
 
 }
@@ -603,10 +628,10 @@ if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .
     slipCount_++;
     ROS_ERROR_STREAM("High Slip Detected: " << slip_);
 	}
-	// ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
-	// ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
-	// ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
-	// ROS_ERROR_STREAM("Slip Count: " << slipCount_);
+	ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+	ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
+	ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
+	ROS_ERROR_STREAM("Slip Count: " << slipCount_);
 	if (mobility_.data == 0) {
 		ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
 		ROS_ERROR("Sending immobility flag to Sensor Fusion");
