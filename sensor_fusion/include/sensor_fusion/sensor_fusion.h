@@ -29,6 +29,7 @@
 //#include <kimera_vio_ros/KimeraVioRos.h>
 #include <sensor_fusion/GetTruePose.h>
 #include "srcp2_msgs/LocalizationSrv.h"
+#include <std_srvs/Trigger.h>
 #define INITIALIZED 1
 #define NOT_INITIALIZED 0
 #define MOBILE 1
@@ -50,7 +51,9 @@ private:
 
     ros::Publisher pubOdom_, pubStatus_, pubSlip_, pubMobility_;
 
+
     ros::ServiceClient src2GetTruePoseClient_;
+
     ros::ServiceServer getTruePoseServer_;
     bool getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req, sensor_fusion::GetTruePose::Response &res);
 
@@ -62,6 +65,9 @@ private:
 
     tf::Matrix3x3 Rbn_;
     tf::Vector3 vb_wo_, vb_vo_;
+    Eigen::Matrix <double, 3, 1> vAccNav_;
+    Eigen::Matrix <double, 3, 1> accelIMU_;
+    Eigen::Matrix <double, 3, 1>  g_;
     // pose estimate, saved over time to integrate position
     geometry_msgs::Pose pose_;
 

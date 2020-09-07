@@ -35,8 +35,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 								}
 								src2GetTruePoseClient_ = nh_.serviceClient<srcp2_msgs::LocalizationSrv>("get_true_pose");
 								getTruePoseServer_ = nh_.advertiseService("true_pose", &SensorFusion::getTruePoseFromSRC2_, this);
-
-//	clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
+								clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
 								averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 								firstVO_ = true;
@@ -69,7 +68,9 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 								pubSlip_ = nh_.advertise<geometry_msgs::PointStamped>("localization/odometry/slip",1);
 
-
+								g_(0,0) =0.0;
+								g_(1,0) =0.0;
+								g_(2,0) =-1.62;
 								double sigVel = .1;
 								double sigPos = .01;
 								Q_ << pow(sigPos,2), 0, 0, 0, 0, 0,
@@ -95,7 +96,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 
 								double slip_=0;
 								double sigWO = .05;
-								double sigVO = .5;
+								double sigVO = .25;
 								Rwo_ << pow(sigWO,2), 0, 0,
 																0, pow(sigWO,2), 0,
 																0, 0, pow(sigWO,2);
@@ -160,6 +161,12 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 								}
 
 								firstIMU_=false;
+
+								if(firstWO_) 	R_imu_nav_o_ = R_body_imu_.transpose();
+
+								accelIMU_(0,0) =msg->linear_acceleration.x;
+								accelIMU_(1,0) =msg->linear_acceleration.y;
+								accelIMU_(2,0) =msg->linear_acceleration.z;
 //	ROS_INFO("RPY %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
 
@@ -209,6 +216,52 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 								driving_mode_ = msg->data;
 								//Stop
 								// if(driving_mode_==4) {
+								//         Q_(0,0)=0.0;
+								//         Q_(1,1)=0.0;
+								//         Q_(2,2)=0.0;
+								//         Q_(3,3)=0.0;
+								//         Q_(4,4)=0.0;
+								//         Q_(5,5)=0.0;
+								// }
+								// if(driving_mode_==0) {
+								// 								Q_(0,0)=pow(0.01,2);
+								// 								Q_(1,1)=pow(0.01,2);
+								// 								Q_(2,2)=pow(0.05,2);
+								// 								Q_(3,3)=pow(0.1,2);
+								// 								Q_(4,4)=pow(0.01,2);
+								// 								Q_(5,5)=pow(0.01,2);
+								// }
+								// //crab
+								// else if(driving_mode_ == 1) {
+								//
+								// 								Q_(0,0)=pow(0.01,2);
+								// 								Q_(1,1)=pow(0.01,2);
+								// 								Q_(2,2)=pow(0.05,2);
+								// 								Q_(3,3)=pow(0.1,2);
+								// 								Q_(4,4)=pow(0.1,2);
+								// 								Q_(5,5)=pow(0.01,2);
+								// }
+								// // DACK
+								// else if(driving_mode_== 2) {
+								//
+								// 								Q_(0,0)=pow(0.01,2);
+								// 								Q_(1,1)=pow(0.01,2);
+								// 								Q_(2,2)=pow(0.05,2);
+								// 								Q_(3,3)=pow(0.1,2);
+								// 								Q_(4,4)=pow(0.01,2);
+								// 								Q_(5,5)=pow(0.01,2);
+								// }
+								// // turn in place
+								// else if(driving_mode_== 3) {
+								//
+								// 								Q_(0,0)=pow(0.0,2);
+								// 								Q_(1,1)=pow(0.0,2);
+								// 								Q_(2,2)=pow(0.0,2);
+								// 								Q_(3,3)=pow(0.0,2);
+								// 								Q_(4,4)=pow(0.0,2);
+								// 								Q_(5,5)=pow(0.1,2);
+								// }
+								// else if(driving_mode_==4) {
 								// 								Q_(0,0)=0.0;
 								// 								Q_(1,1)=0.0;
 								// 								Q_(2,2)=0.0;
@@ -216,61 +269,15 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 								// 								Q_(4,4)=0.0;
 								// 								Q_(5,5)=0.0;
 								// }
-								if(driving_mode_==0) {
-																Q_(0,0)=pow(0.01,2);
-																Q_(1,1)=pow(0.01,2);
-																Q_(2,2)=pow(0.05,2);
-																Q_(3,3)=pow(0.1,2);
-																Q_(4,4)=pow(0.01,2);
-																Q_(5,5)=pow(0.01,2);
-								}
-								//crab
-								else if(driving_mode_ == 1) {
-
-																Q_(0,0)=pow(0.01,2);
-																Q_(1,1)=pow(0.01,2);
-																Q_(2,2)=pow(0.05,2);
-																Q_(3,3)=pow(0.1,2);
-																Q_(4,4)=pow(0.1,2);
-																Q_(5,5)=pow(0.01,2);
-								}
-								// DACK
-								else if(driving_mode_== 2) {
-
-																Q_(0,0)=pow(0.01,2);
-																Q_(1,1)=pow(0.01,2);
-																Q_(2,2)=pow(0.05,2);
-																Q_(3,3)=pow(0.1,2);
-																Q_(4,4)=pow(0.01,2);
-																Q_(5,5)=pow(0.01,2);
-								}
-								// turn in place
-								else if(driving_mode_== 3) {
-
-																Q_(0,0)=pow(0.0,2);
-																Q_(1,1)=pow(0.0,2);
-																Q_(2,2)=pow(0.0,2);
-																Q_(3,3)=pow(0.0,2);
-																Q_(4,4)=pow(0.0,2);
-																Q_(5,5)=pow(0.1,2);
-								}
-								else if(driving_mode_==4) {
-																Q_(0,0)=0.0;
-																Q_(1,1)=0.0;
-																Q_(2,2)=0.0;
-																Q_(3,3)=0.0;
-																Q_(4,4)=0.0;
-																Q_(5,5)=0.0;
-								}
 								// else if (driving_mode_ == 0)
 								// {
-								// 	Q_(0,0)=0.0;
-								// 	Q_(1,1)=0.0;
-								// 	Q_(2,2)=0.0;
-								// 	Q_(3,3)=pow(0.1,2);
-								// 	Q_(4,4)=pow(0.1,2);
-								// 	Q_(5,5)=pow(0.01,2);
-								// }
+								//  Q_(0,0)=0.0;
+								//  Q_(1,1)=0.0;
+								//  Q_(2,2)=0.0;
+								//  Q_(3,3)=pow(0.1,2);
+								//  Q_(4,4)=pow(0.1,2);
+								//  Q_(5,5)=pow(0.01,2);
+								//
 
 
 }
@@ -278,6 +285,7 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 
 void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 {
+
 
 
 
@@ -339,14 +347,42 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								F_(0,3) = dt;
 								F_(1,4) = dt;
 								F_(2,5) = dt;
+								Q_(0,0)=pow(0.05*dt*dt,2);
+								Q_(1,1)=pow(0.05*dt*dt,2);
+								Q_(2,2)=pow(0.05*dt*dt,2);
+								Q_(3,3)=pow(0.05*dt,2);
+								Q_(4,4)=pow(0.05*dt,2);
+								Q_(5,5)=pow(0.05*dt,2);
 
-								x_ = F_*x_;
+								Eigen::MatrixXd RBN(3,3);
+								tf::Vector3 row;
+								row=Rbn_.getRow(0);
+								RBN(0,0)= row.x();
+								RBN(0,1)= row.y();
+								RBN(0,2)= row.z();
+								row=Rbn_.getRow(1);
+								RBN(1,0)= row.x();
+								RBN(1,1)= row.y();
+								RBN(1,2)= row.z();
+								row=Rbn_.getRow(2);
+								RBN(2,0)= row.x();
+								RBN(2,1)= row.y();
+								RBN(2,2)= row.z();
+								//	x_ = F_*x_;
+								x_(0,0) = x_(0,0) + dt*x_(3,0);
+								x_(1,0) = x_(1,0) + dt*x_(4,0);
+								x_(2,0) = x_(2,0) + dt*x_(5,0);
+								vAccNav_ = RBN*accelIMU_+g_;
+								x_(3,0) = x_(3,0) + dt*vAccNav_(0,0);
+								x_(4,0) = x_(4,0) + dt*vAccNav_(1,0);
+								x_(5,0) = x_(5,0) + dt*vAccNav_(2,0);
+
 								Eigen::MatrixXd G(6,6);
 								G.setZero();
 								G(0,0)=1.0;
 								G(1,1)=1.0;
 								G(2,2)=1.0;
-								tf::Vector3 row;
+
 
 								row=Rbn_.getRow(0);
 
@@ -381,8 +417,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																								ROS_WARN("Robot Climbing Up! Pitch: %f",pitch*180/3.1414926);
 																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
 																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
-																								if((pitch*180/3.1414926) <-30){
-																									ROS_ERROR("Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
+																								if((pitch*180/3.1414926) <-30) {
+																																ROS_ERROR("Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
 																								}
 
 																}
@@ -412,7 +448,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																// }
 
 
-																if(driving_mode_!=0) {
+																//if(slip_<.9 && driving_mode_!=0) {
+
 
 																								// kimera measurement update
 																								zWO_(0,0)= vn_wo.x();
@@ -426,8 +463,17 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																								Eigen::MatrixXd I(6,6);
 																								I.setIdentity();
 																								P_ =(I-K*Hodom_)*P_;
+																								Eigen::MatrixXd xPred(2,1);
+																								xPred << x_(0,0), x_(1,0);
+
 																								x_ = x_ + K*(zWO_ - Hodom_*x_);
-																}
+
+																							//	if(pow(pow(x_(0,0)-xPred(0,0),2)+pow(x_(1,0)-xPred(1,0),2),.5)
+
+																// }else{
+																//
+																// 		if(slip_>.9) ROS_ERROR(" Skip WO Due to High Slip");
+																// }
 
 								}
 
@@ -437,13 +483,13 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								publishOdom_();
 
 
-								if((fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec())>60)&& !firstVO_) {
+								if((fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec())>30)&& !firstVO_) {
 																ROS_INFO_STREAM(" VO NODE FAIL!? " );
 																ROS_INFO_STREAM(" lastTime_wo " <<lastTime_wo_.toSec() );
 																ROS_INFO_STREAM(" lastTime_vio " <<lastTime_vo_.toSec() );
 																ROS_INFO_STREAM(" dt" <<fabs(lastTime_wo_.toSec()-lastTime_vo_.toSec()) );
-//		std_srvs::Trigger trig;
-//		clt_restart_kimera_.call(trig);
+																std_srvs::Trigger trig;
+																clt_restart_kimera_.call(trig);
 																lastTime_vo_=msg->header.stamp;
 
 
@@ -580,65 +626,65 @@ void SensorFusion::publishOdom_()
 
 
 
-if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ != 3)
-{
-	mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at the previous step, it sends immobile again.
-  if (slipTimer == 0)
-	{
-    slipTimer = ros::Time::now().toSec();
-  }
-	else
-	{
-    if (ros::Time::now().toSec() - slipTimer < 25 && slipCount_ > 25)
-		{
-      ROS_ERROR_STREAM("Frequent Slip: Slip Count: " << slipCount_);
-      ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
-      // ROS_ERROR_STREAM("DRIVING MODE IN SLIP"<<d
-      if (homingUpdateFlag_)
-			{
-        ROS_ERROR("Rover performed homing recently, skipping high slip flag");
-        homingUpdateFlag_ = false;
-      }
-			else
-			{
-        ROS_ERROR_STREAM("Frequent Slip Flag slipCount_=" << slipCount_);
-        mobility_.data = IMMOBILE;
-      }
-      slipCount_ = 0;
-      slipTimer = 0;
-    }
-		else
-		{
-			if (ros::Time::now().toSec() - slipTimer >25) {
-				slipTimer=0;
-				slipCount_ = 0;
-			}
-		mobility_.data = MOBILE;
-		}
-  }
-  slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
-  slip.point.y = vb_wo_.x();
-  slip.point.z = vb_vo_.x();
-  slip.header.stamp = lastTime_wo_;
-  slip.header.frame_id = odometry_frame_id;
-  // pubSlip_.publish(slip);
-  slip_ = fabs(slip.point.x);
-  if (slip_ > 0.9)
-	{
-    slipCount_++;
-    ROS_ERROR_STREAM("High Slip Detected: " << slip_);
-	}
-	ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
-	ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
-	ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
-	ROS_ERROR_STREAM("Slip Count: " << slipCount_);
-	if (mobility_.data == 0) {
-		ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
-		ROS_ERROR("Sending immobility flag to Sensor Fusion");
-	}
-  // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
-  pubMobility_.publish(mobility_);
-}
+								if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ != 3)
+								{
+																mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at the previous step, it sends immobile again.
+																if (slipTimer == 0)
+																{
+																								slipTimer = ros::Time::now().toSec();
+																}
+																else
+																{
+																								if (ros::Time::now().toSec() - slipTimer < 25 && slipCount_ > 25)
+																								{
+																																ROS_ERROR_STREAM("Frequent Slip: Slip Count: " << slipCount_);
+																																ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+																																// ROS_ERROR_STREAM("DRIVING MODE IN SLIP"<<d
+																																if (homingUpdateFlag_)
+																																{
+																																								ROS_ERROR("Rover performed homing recently, skipping high slip flag");
+																																								homingUpdateFlag_ = false;
+																																}
+																																else
+																																{
+																																								ROS_ERROR_STREAM("Frequent Slip Flag slipCount_=" << slipCount_);
+																																								mobility_.data = IMMOBILE;
+																																}
+																																slipCount_ = 0;
+																																slipTimer = 0;
+																								}
+																								else
+																								{
+																																if (ros::Time::now().toSec() - slipTimer >25) {
+																																								slipTimer=0;
+																																								slipCount_ = 0;
+																																}
+																																mobility_.data = MOBILE;
+																								}
+																}
+																slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
+																slip.point.y = vb_wo_.x();
+																slip.point.z = vb_vo_.x();
+																slip.header.stamp = lastTime_wo_;
+																slip.header.frame_id = odometry_frame_id;
+																// pubSlip_.publish(slip);
+																slip_ = fabs(slip.point.x);
+																if (slip_ > 0.9)
+																{
+																								slipCount_++;
+																								ROS_ERROR_STREAM("High Slip Detected: " << slip_);
+																}
+																ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+																ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
+																ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
+																ROS_ERROR_STREAM("Slip Count: " << slipCount_);
+																if (mobility_.data == 0) {
+																								ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
+																								ROS_ERROR("Sending immobility flag to Sensor Fusion");
+																}
+																// ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
+																pubMobility_.publish(mobility_);
+								}
 
 
 
