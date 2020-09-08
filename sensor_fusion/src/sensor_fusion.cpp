@@ -419,6 +419,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
 																								if((pitch*180/3.1414926) <-30) {
 																																ROS_ERROR("Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
+																																mobility_.data = IMMOBILE;
+																																pubMobility_.publish(mobility_);
 																								}
 
 																}
@@ -626,7 +628,7 @@ void SensorFusion::publishOdom_()
 
 
 
-								if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ != 3)
+								if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED && vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ == 2)
 								{
 																mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at the previous step, it sends immobile again.
 																if (slipTimer == 0)
