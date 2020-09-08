@@ -19,7 +19,7 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
 
 								range_to_base::LocationOfBase srv;
 
-								srv.request.angle = 0.4;
+								srv.request.angle = req.angle;
 
 								baseLocationClient_.call(srv);
 
