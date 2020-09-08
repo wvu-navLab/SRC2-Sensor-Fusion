@@ -1,4 +1,5 @@
 bool initializeLandmark
+float64 angle
 ---
 bool success
 geometry_msgs/Point base_location
