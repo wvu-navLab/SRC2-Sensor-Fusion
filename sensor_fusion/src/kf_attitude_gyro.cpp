@@ -38,26 +38,46 @@ KFAttitudeGyro::KFAttitudeGyro(ros::NodeHandle & nh)
 
 	subImu = nh_.subscribe("imu",10,&KFAttitudeGyro::imuCallback,this);
 
+    // pubOdomRoll = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/roll",1);
+    // pubOdomPitch = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/pitch",1);
+    // pubOdomYaw = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/yaw",1);
 
-    pubOdomRoll = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/roll",1);
-    pubOdomPitch = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/pitch",1);
-    pubOdomYaw = nh_.advertise<geometry_msgs::PointStamped>("attitude/odom/yaw",1);
+    // pubRollMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/roll",1);
+    // pubPitchMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/pitch",1);
+    // pubYawMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/yaw",1);
 
-    pubRollMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/roll",1);
-    pubPitchMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/pitch",1);
-    pubYawMeasured = nh_.advertise<geometry_msgs::PointStamped>("attitude/measured/yaw",1);
+    // pubRollEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/roll",1);
+    // pubPitchEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/pitch",1);
+    // pubYawEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/yaw",1);
 
-    pubRollEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/roll",1);
-    pubPitchEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/pitch",1);
-    pubYawEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/yaw",1);
-
-    pubBiasesEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/gyro_biases",1);
+    // pubBiasesEstimated = nh_.advertise<geometry_msgs::PointStamped>("attitude/estimated/gyro_biases",1);
 
     pubImuFiltered = nh_.advertise<sensor_msgs::Imu>("imu_filtered",1);
 
     last_time_ = time_now.toSec();
 
     toggleStaticServer_ = nh_.advertiseService("sensor_fusion/toggle_rover_static",&KFAttitudeGyro::toggleStaticRover_,this);
+
+    // std::string node_name = "sensor_fusion";
+    // std::string robot_name;
+
+    // if(ros::param::get(node_name+"/odometry_frame_id",odometry_frame_id)==false)
+    // {
+    //     ROS_FATAL("No parameter 'odometry_frame_id' specified");
+    //     ros::shutdown();
+    //     exit(1);
+    // }
+    // if(ros::param::get(node_name+"/odometry_child_frame_id",odometry_child_frame_id)==false)
+    // {
+    //     ROS_FATAL("No parameter 'odometry_child_frame_id' specified");
+    //     ros::shutdown();
+    //     exit(1);
+    // }
+    // if(ros::param::get(node_name+"/robot_name", robot_name)==false) {
+    //     ROS_FATAL("No parameter 'robot_name' specified");
+    //     ros::shutdown();
+    //     exit(1);
+    // }
 
 }
 
@@ -251,14 +271,14 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     // Covariance Update
     P_ = (Eigen::MatrixXd::Identity(6,6) - K * H) * P_;
 
-    publishStates(roll, 0, time_now,  pubRollMeasured);
-    publishStates(pitch, 0, time_now,  pubPitchMeasured);
-    publishStates(yaw, 0, time_now,  pubYawMeasured);
+    // publishStates(roll, 0, time_now,  pubRollMeasured);
+    // publishStates(pitch, 0, time_now,  pubPitchMeasured);
+    // publishStates(yaw, 0, time_now,  pubYawMeasured);
 
-    publishStates(x_(0), P_(0,0), time_now,  pubRollEstimated);
-    publishStates(x_(1), P_(1,1), time_now,  pubPitchEstimated);
-    publishStates(x_(2), P_(2,2), time_now,  pubYawEstimated);
-    publishBiases(x_(3), x_(4), x_(5), time_now,  pubBiasesEstimated);
+    // publishStates(x_(0), P_(0,0), time_now,  pubRollEstimated);
+    // publishStates(x_(1), P_(1,1), time_now,  pubPitchEstimated);
+    // publishStates(x_(2), P_(2,2), time_now,  pubYawEstimated);
+    // publishBiases(x_(3), x_(4), x_(5), time_now,  pubBiasesEstimated);
 
     last_time_ = time_now.toSec();
 
@@ -279,33 +299,33 @@ void KFAttitudeGyro::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     pubImuFiltered.publish(new_msg);
 }
 
-// Publish estimated states in global frame
-void KFAttitudeGyro::publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub)
-{
-    geometry_msgs::PointStamped msg;
+// // Publish estimated states in global frame
+// void KFAttitudeGyro::publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub)
+// {
+//     geometry_msgs::PointStamped msg;
 
-    msg.header.stamp = time;
-    msg.header.frame_id = "/scout_1_tf/odom";
-    msg.point.x = state;
-    msg.point.y = state + 3*sqrt(covariance);
-    msg.point.z = state - 3*sqrt(covariance);
+//     msg.header.stamp = time;
+//     msg.header.frame_id = odometry_frame_id;
+//     msg.point.x = state;
+//     msg.point.y = state + 3*sqrt(covariance);
+//     msg.point.z = state - 3*sqrt(covariance);
 
-    pub.publish(msg);
-}
+//     pub.publish(msg);
+// }
 
-// Publish estimated states in global frame
-void KFAttitudeGyro::publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub)
-{
-    geometry_msgs::PointStamped msg;
+// // Publish estimated states in global frame
+// void KFAttitudeGyro::publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub)
+// {
+//     geometry_msgs::PointStamped msg;
 
-    msg.header.stamp = time;
-    msg.header.frame_id = "/scout_1_tf/odom";
-    msg.point.x = bx;
-    msg.point.y = by;
-    msg.point.z = bz;
+//     msg.header.stamp = time;
+//     msg.header.frame_id = odometry_frame_id;
+//     msg.point.x = bx;
+//     msg.point.y = by;
+//     msg.point.z = bz;
 
-    pub.publish(msg);
-}
+//     pub.publish(msg);
+// }
 
 
 int main(int argc, char **argv)

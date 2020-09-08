@@ -48,8 +48,8 @@ private:
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
-    void publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub);
-    void publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub);
+    // void publishStates(const double & state, const double & covariance, const ros::Time & time, const ros::Publisher & pub);
+    // void publishBiases(const double & bx, const double & by, const double & bz, const ros::Time & time, const ros::Publisher & pub);
 
     ros::Subscriber subImu;
     ros::ServiceServer toggleStaticServer_;
@@ -57,17 +57,17 @@ private:
     bool roverStatic_;
     bool toggleStaticRover_(sensor_fusion::RoverStatic::Request &req, sensor_fusion::RoverStatic::Response &res);
 
-    ros::Publisher pubRollMeasured;
-    ros::Publisher pubPitchMeasured;
-    ros::Publisher pubYawMeasured;
-    ros::Publisher pubOdomRoll;
-    ros::Publisher pubOdomPitch;
-    ros::Publisher pubOdomYaw;
+    // ros::Publisher pubRollMeasured;
+    // ros::Publisher pubPitchMeasured;
+    // ros::Publisher pubYawMeasured;
+    // ros::Publisher pubOdomRoll;
+    // ros::Publisher pubOdomPitch;
+    // ros::Publisher pubOdomYaw;
 
-    ros::Publisher pubRollEstimated;
-    ros::Publisher pubPitchEstimated;
-    ros::Publisher pubYawEstimated;
-    ros::Publisher pubBiasesEstimated;
+    // ros::Publisher pubRollEstimated;
+    // ros::Publisher pubPitchEstimated;
+    // ros::Publisher pubYawEstimated;
+    // ros::Publisher pubBiasesEstimated;
 
     ros::Publisher pubImuFiltered;    
 
@@ -77,6 +77,9 @@ private:
     double dt_;
     double last_time_;
     bool firstIMUCallback_;
+
+    // std::string odometry_frame_id;
+    // std::string odometry_child_frame_id;
  };
 
 #endif //KF_ATTITUDE_GYRO_H
