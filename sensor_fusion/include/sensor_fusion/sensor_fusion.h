@@ -45,8 +45,8 @@ public:
     void initializationStatus_();
 
 private:
-
-
+   bool averageAccel_;
+   double accelCount_;
     ros::NodeHandle & nh_;
 
     ros::Publisher pubOdom_, pubStatus_, pubSlip_, pubMobility_;
@@ -116,9 +116,9 @@ private:
     Eigen::Matrix <double, 3,1> zVO_;
     Eigen::Matrix <double, 3,1> zWO_;
 
-    Eigen::Matrix <double, 2, 6> Hposition_;
-    Eigen::Matrix <double, 2, 1> zPosition_;
-    Eigen::Matrix <double, 2, 2> Rposition_;
+    Eigen::Matrix <double, 6, 6> Hposition_;
+    Eigen::Matrix <double, 6, 1> zPosition_;
+    Eigen::Matrix <double, 6, 6> Rposition_;
 
     void publishOdom_();
     int driving_mode_;

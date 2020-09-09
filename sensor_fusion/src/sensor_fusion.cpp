@@ -35,7 +35,7 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 								}
 								src2GetTruePoseClient_ = nh_.serviceClient<srcp2_msgs::LocalizationSrv>("get_true_pose");
 								getTruePoseServer_ = nh_.advertiseService("true_pose", &SensorFusion::getTruePoseFromSRC2_, this);
-								clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
+								//clt_restart_kimera_ = nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
 								averageIMU_ = false; // if true, IMU attitude will be averaged between wheel odom updates; if false latest IMU attitude is used
 								firstVO_ = true;
@@ -47,6 +47,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 								pitchInc_=0;
 								yawInc_=0;
 								mobility_.data= MOBILE;
+								averageAccel_=true;
+								accelCount_ =0;
 
 								// initialized_=NOT_INITIALIZED;
 
@@ -71,6 +73,9 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 								g_(0,0) =0.0;
 								g_(1,0) =0.0;
 								g_(2,0) =-1.62;
+								accelIMU_(0,0) =0.0;
+								accelIMU_(1,0) =0.0;
+								accelIMU_(2,0) =0.0;
 								double sigVel = .1;
 								double sigPos = .01;
 								Q_ << pow(sigPos,2), 0, 0, 0, 0, 0,
@@ -87,12 +92,21 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 																0, 0, 0, 0, 1, 0,
 																0, 0, 0, 0, 0, 1;
 
-								Hposition_ << 1, 0, 0, 0, 0, 0,
-																0, 1, 0, 0, 0, 0;
+								Hposition_ <<   1, 0, 0, 0, 0, 0,
+																0, 1, 0, 0, 0, 0,
+																0, 0, 1, 0, 0, 0,
+																0, 0, 0, 1, 0, 0,
+																0, 0, 0, 0, 1, 0,
+																0, 0, 0, 0, 0, 1;
 
 								double sigPosition = 1e-4;
-								Rposition_ << pow(sigPosition,2), 0,
-																0, pow(sigPosition,2);
+								double sigConstrain = .1;
+								Rposition_ << pow(sigPosition,2), 0, 0,0, 0, 0,
+																0, pow(sigPosition,2), 0, 0, 0, 0,
+																0, 0, pow(sigConstrain,2), 0, 0, 0,
+																0, 0, 0, pow(sigConstrain,2), 0, 0,
+																0, 0, 0, 0,  pow(sigConstrain,2), 0,
+																0, 0, 0, 0, 0, pow(sigConstrain,2) ;
 
 								double slip_=0;
 								double sigWO = .05;
@@ -112,6 +126,8 @@ SensorFusion::SensorFusion(ros::NodeHandle & nh)
 																0, 0, 0, 1, 0, 0,
 																0, 0, 0, 0, 1, 0,
 																0, 0, 0, 0, 0, 1;
+
+								x_ << 0,0,0,0,0,0;
 
 
 
@@ -162,11 +178,19 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr& msg)
 
 								firstIMU_=false;
 
-								if(firstWO_) 	R_imu_nav_o_ = R_body_imu_.transpose();
-
-								accelIMU_(0,0) =msg->linear_acceleration.x;
-								accelIMU_(1,0) =msg->linear_acceleration.y;
-								accelIMU_(2,0) =msg->linear_acceleration.z;
+								if(firstWO_) R_imu_nav_o_ = R_body_imu_.transpose();
+								if(averageAccel_) {
+													//			ROS_ERROR_STREAM("Accel IMU " << msg->linear_acceleration.x << " " << msg->linear_acceleration.y << " " << msg->linear_acceleration.z);
+																accelIMU_(0,0) =msg->linear_acceleration.x+accelIMU_(0,0);
+																accelIMU_(1,0) =msg->linear_acceleration.y+accelIMU_(1,0);
+																accelIMU_(2,0) =msg->linear_acceleration.z+accelIMU_(2,0);
+																accelCount_ = accelCount_+1;
+								}
+								else{
+																accelIMU_(0,0) =msg->linear_acceleration.x;
+																accelIMU_(1,0) =msg->linear_acceleration.y;
+																accelIMU_(2,0) =msg->linear_acceleration.z;
+								}
 //	ROS_INFO("RPY %f  %f  %f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
 
@@ -193,11 +217,18 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 																								x_(0,0)=pose_.position.x;
 																								x_(1,0)= pose_.position.y;
 																								x_(2,0)=pose_.position.z;
+																								x_(3,0)=0.0;
+																								x_(4,0)= 0.0;
+																								x_(5,0)=0.0;
+
 																								// also re-init P
 																								P_ = Q_;
 																								P_(0,0)=1e-6;
 																								P_(1,1)=1e-6;
 																								P_(2,2)=1e-6;
+																								P_(3,3)=1e-6;
+																								P_(4,4)=1e-6;
+																								P_(5,5)=1e-6;
 																								init_true_pose_=true;
 																								res.success = true;
 
@@ -214,6 +245,8 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 
 void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 								driving_mode_ = msg->data;
+
+
 								//Stop
 								// if(driving_mode_==4) {
 								//         Q_(0,0)=0.0;
@@ -224,50 +257,50 @@ void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg){
 								//         Q_(5,5)=0.0;
 								// }
 								// if(driving_mode_==0) {
-								// 								Q_(0,0)=pow(0.01,2);
-								// 								Q_(1,1)=pow(0.01,2);
-								// 								Q_(2,2)=pow(0.05,2);
-								// 								Q_(3,3)=pow(0.1,2);
-								// 								Q_(4,4)=pow(0.01,2);
-								// 								Q_(5,5)=pow(0.01,2);
+								//         Q_(0,0)=pow(0.01,2);
+								//         Q_(1,1)=pow(0.01,2);
+								//         Q_(2,2)=pow(0.05,2);
+								//         Q_(3,3)=pow(0.1,2);
+								//         Q_(4,4)=pow(0.01,2);
+								//         Q_(5,5)=pow(0.01,2);
 								// }
 								// //crab
 								// else if(driving_mode_ == 1) {
 								//
-								// 								Q_(0,0)=pow(0.01,2);
-								// 								Q_(1,1)=pow(0.01,2);
-								// 								Q_(2,2)=pow(0.05,2);
-								// 								Q_(3,3)=pow(0.1,2);
-								// 								Q_(4,4)=pow(0.1,2);
-								// 								Q_(5,5)=pow(0.01,2);
+								//         Q_(0,0)=pow(0.01,2);
+								//         Q_(1,1)=pow(0.01,2);
+								//         Q_(2,2)=pow(0.05,2);
+								//         Q_(3,3)=pow(0.1,2);
+								//         Q_(4,4)=pow(0.1,2);
+								//         Q_(5,5)=pow(0.01,2);
 								// }
 								// // DACK
 								// else if(driving_mode_== 2) {
 								//
-								// 								Q_(0,0)=pow(0.01,2);
-								// 								Q_(1,1)=pow(0.01,2);
-								// 								Q_(2,2)=pow(0.05,2);
-								// 								Q_(3,3)=pow(0.1,2);
-								// 								Q_(4,4)=pow(0.01,2);
-								// 								Q_(5,5)=pow(0.01,2);
+								//         Q_(0,0)=pow(0.01,2);
+								//         Q_(1,1)=pow(0.01,2);
+								//         Q_(2,2)=pow(0.05,2);
+								//         Q_(3,3)=pow(0.1,2);
+								//         Q_(4,4)=pow(0.01,2);
+								//         Q_(5,5)=pow(0.01,2);
 								// }
 								// // turn in place
 								// else if(driving_mode_== 3) {
 								//
-								// 								Q_(0,0)=pow(0.0,2);
-								// 								Q_(1,1)=pow(0.0,2);
-								// 								Q_(2,2)=pow(0.0,2);
-								// 								Q_(3,3)=pow(0.0,2);
-								// 								Q_(4,4)=pow(0.0,2);
-								// 								Q_(5,5)=pow(0.1,2);
+								//         Q_(0,0)=pow(0.0,2);
+								//         Q_(1,1)=pow(0.0,2);
+								//         Q_(2,2)=pow(0.0,2);
+								//         Q_(3,3)=pow(0.0,2);
+								//         Q_(4,4)=pow(0.0,2);
+								//         Q_(5,5)=pow(0.1,2);
 								// }
 								// else if(driving_mode_==4) {
-								// 								Q_(0,0)=0.0;
-								// 								Q_(1,1)=0.0;
-								// 								Q_(2,2)=0.0;
-								// 								Q_(3,3)=0.0;
-								// 								Q_(4,4)=0.0;
-								// 								Q_(5,5)=0.0;
+								//         Q_(0,0)=0.0;
+								//         Q_(1,1)=0.0;
+								//         Q_(2,2)=0.0;
+								//         Q_(3,3)=0.0;
+								//         Q_(4,4)=0.0;
+								//         Q_(5,5)=0.0;
 								// }
 								// else if (driving_mode_ == 0)
 								// {
@@ -297,8 +330,15 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																//since kimera is init with true pose, pick up true global attitude on first call
 																// later we can get this directly from get true pose
 
+																tf::Quaternion q(
+																								0.0,
+																								0.0,
+																								0.0,
+																								1.0
+																								);
 
-																R_imu_nav_o_ = R_body_imu_.transpose();
+																tf::Matrix3x3 R_init_b_n(q);
+																R_imu_nav_o_ = R_init_b_n*R_body_imu_.transpose();
 
 																pose_ = msg->pose.pose;
 
@@ -338,6 +378,27 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																R_body_imu_.setRPY(rollInc_, pitchInc_, yawInc_);
 								}
 
+								Eigen::MatrixXd accel(3,1);
+								if(averageAccel_) {
+																//ROS_ERROR_STREAM("Accel IMU " << accelIMU_.transpose());
+													//ROS_ERROR_STREAM("Accel IMU Count " << accelCount_);
+
+
+																accel(0,0)= accelIMU_(0,0)/accelCount_;
+																accel(1,0)= accelIMU_(1,0)/accelCount_;
+																accel(2,0)= accelIMU_(2,0)/accelCount_;
+													//			ROS_ERROR_STREAM(" Accel Avg" << accel.transpose());
+																accelIMU_(0,0)=0.0;
+																accelIMU_(1,0)=0.0;
+																accelIMU_(2,0)=0.0;
+																accelCount_=0;
+								}
+								else{
+																accel(0,0)= accelIMU_(0,0);
+																accel(1,0)= accelIMU_(1,0);
+																accel(2,0)= accelIMU_(2,0);
+								}
+
 
 								Rbn_=R_imu_nav_o_*R_body_imu_;
 
@@ -372,7 +433,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								x_(0,0) = x_(0,0) + dt*x_(3,0);
 								x_(1,0) = x_(1,0) + dt*x_(4,0);
 								x_(2,0) = x_(2,0) + dt*x_(5,0);
-								vAccNav_ = RBN*accelIMU_+g_;
+								vAccNav_ = RBN*accel+g_;
 								x_(3,0) = x_(3,0) + dt*vAccNav_(0,0);
 								x_(4,0) = x_(4,0) + dt*vAccNav_(1,0);
 								x_(5,0) = x_(5,0) + dt*vAccNav_(2,0);
@@ -453,28 +514,44 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																//if(slip_<.9 && driving_mode_!=0) {
 
 
-																								// kimera measurement update
-																								zWO_(0,0)= vn_wo.x();
-																								zWO_(1,0)= vn_wo.y();
-																								zWO_(2,0)= vn_wo.z();
-																								Eigen::MatrixXd S(3,3);
-																								S = Rwo_ + Hodom_*P_*Hodom_.transpose();
+																// kimera measurement update
+																zWO_(0,0)= vn_wo.x();
+																zWO_(1,0)= vn_wo.y();
+																zWO_(2,0)= vn_wo.z();
 
-																								Eigen::MatrixXd K(6,3);
-																								K = (P_*Hodom_.transpose())*S.inverse();
-																								Eigen::MatrixXd I(6,6);
-																								I.setIdentity();
-																								P_ =(I-K*Hodom_)*P_;
-																								Eigen::MatrixXd xPred(2,1);
-																								xPred << x_(0,0), x_(1,0);
+																Eigen::Vector3d Innovation;
+																Innovation = zWO_ - Hodom_*x_;
 
-																								x_ = x_ + K*(zWO_ - Hodom_*x_);
+																Eigen::Vector3d Hx = Hodom_*x_;
 
-																							//	if(pow(pow(x_(0,0)-xPred(0,0),2)+pow(x_(1,0)-xPred(1,0),2),.5)
+
+																if (Innovation.norm()>1.0 && init_true_pose_) {
+																								ROS_ERROR_STREAM("Skipping WO:  Failed Innovation Check " << Innovation.norm());
+																								ROS_INFO_STREAM(" SF: WO Hx " << Hx.transpose()  );
+																								ROS_INFO_STREAM(" WO" << vn_wo.x() << " " << vn_wo.y() << "  "<< vn_wo.z());
+																								ROS_INFO_STREAM(" Innov " << Innovation.transpose());
+																								lastTime_wo_=msg->header.stamp;
+																								publishOdom_();
+																								return;
+																}
+																Eigen::MatrixXd S(3,3);
+																S = Rwo_ + Hodom_*P_*Hodom_.transpose();
+
+																Eigen::MatrixXd K(6,3);
+																K = (P_*Hodom_.transpose())*S.inverse();
+																Eigen::MatrixXd I(6,6);
+																I.setIdentity();
+																P_ =(I-K*Hodom_)*P_;
+																Eigen::MatrixXd xPred(2,1);
+																xPred << x_(0,0), x_(1,0);
+
+																x_ = x_ + K*(zWO_ - Hodom_*x_);
+
+																//	if(pow(pow(x_(0,0)-xPred(0,0),2)+pow(x_(1,0)-xPred(1,0),2),.5)
 
 																// }else{
 																//
-																// 		if(slip_>.9) ROS_ERROR(" Skip WO Due to High Slip");
+																//   if(slip_>.9) ROS_ERROR(" Skip WO Due to High Slip");
 																// }
 
 								}
@@ -497,7 +574,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 								}
 
-								//TODO: if pose NaN, then publish lost state message
+
 
 
 
@@ -510,10 +587,14 @@ void SensorFusion::positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& 
 
 								zPosition_(0,0)=x_[0]+ msg->position.x;
 								zPosition_(1,0)=x_[1]+ msg->position.y;
-								Eigen::MatrixXd S(2,2);
+								zPosition_(2,0)=0.0;
+								zPosition_(3,0)=0.0;
+								zPosition_(4,0)=0.0;
+								zPosition_(5,0)=0.0;
+								Eigen::MatrixXd S(6,6);
 								S = Rposition_ + Hposition_*P_*Hposition_.transpose();
 
-								Eigen::MatrixXd K(6,2);
+								Eigen::MatrixXd K(6,6);
 								K = (P_*Hposition_.transpose())*S.inverse();
 								Eigen::MatrixXd I(6,6);
 								I.setIdentity();
