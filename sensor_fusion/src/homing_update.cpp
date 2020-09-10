@@ -24,12 +24,17 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
 
 
 								if(req.initializeLandmark) {
+									if(fabs(srv.response.position.x) < 100.0 && fabs(srv.response.position.y) < 100  ) {
 																baseStationLocation_.x=srv.response.position.x;
 																baseStationLocation_.y=srv.response.position.y;
 																baseStationLocation_.z = 0.0;
 																ROS_INFO(" Saving Base Station as Landmark x:%f y:%f", baseStationLocation_.x, baseStationLocation_.y);
 																pubBaseLocation_.publish(baseStationLocation_);
 																res.success=true;
+															}
+															else{
+																res.success=false;
+															}
 
 								}
 								else {
