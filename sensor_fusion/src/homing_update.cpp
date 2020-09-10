@@ -20,8 +20,8 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
 								range_to_base::LocationOfBase srv;
 
 								srv.request.angle = req.angle;
+							  baseLocationClient_.call(srv);
 
-								baseLocationClient_.call(srv);
 
 								if(req.initializeLandmark) {
 																baseStationLocation_.x=srv.response.position.x;
@@ -33,17 +33,17 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
 
 								}
 								else {
-																if(fabs(srv.response.position.x) < 100.0 && fabs(srv.response.position.y) < 100  ){
-																// our measurement is the relative error in x and y
-																measurementUpdate_.position.x=baseStationLocation_.x - srv.response.position.x;
-																measurementUpdate_.position.y=baseStationLocation_.y - srv.response.position.y;
-																measurementUpdate_.position.z=baseStationLocation_.z - 0.0; // z isnt actually used...
-																pubMeasurementUpdate_.publish(measurementUpdate_);
-																res.success =true;
-															}
-															else{
-																res.success = false;
-															}
+																if(fabs(srv.response.position.x) < 100.0 && fabs(srv.response.position.y) < 100  ) {
+																								// our measurement is the relative error in x and y
+																								measurementUpdate_.position.x=baseStationLocation_.x - srv.response.position.x;
+																								measurementUpdate_.position.y=baseStationLocation_.y - srv.response.position.y;
+																								measurementUpdate_.position.z=baseStationLocation_.z - 0.0; // z isnt actually used...
+																								pubMeasurementUpdate_.publish(measurementUpdate_);
+																								res.success =true;
+																}
+																else{
+																								res.success = false;
+																}
 
 								}
 

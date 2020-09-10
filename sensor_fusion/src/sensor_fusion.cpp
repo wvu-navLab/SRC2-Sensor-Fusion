@@ -805,7 +805,7 @@ void SensorFusion::publishOdom_()
 								odom_trans.child_frame_id = updatedOdom.child_frame_id;
 								odom_trans.transform.translation.x = updatedOdom.pose.pose.position.x;
 								odom_trans.transform.translation.y = updatedOdom.pose.pose.position.y;
-								odom_trans.transform.translation.z =0.0;// updatedOdom.pose.pose.position.z;
+								odom_trans.transform.translation.z = updatedOdom.pose.pose.position.z;
 								odom_trans.transform.rotation.x =updatedOdom.pose.pose.orientation.x;
 								odom_trans.transform.rotation.y =updatedOdom.pose.pose.orientation.y;
 								odom_trans.transform.rotation.z =updatedOdom.pose.pose.orientation.z;
