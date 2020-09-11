@@ -467,19 +467,19 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								double roll, pitch, yaw;
 								Rbn_.getRPY(roll,pitch,yaw);
 								if((pitch*180/3.1414926) >60) {
-																ROS_WARN("Skipping Wheel Odom Update Pitch: %f",pitch*180/3.1414926);
-																ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
-																ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+																ROS_WARN_THROTTLE(10,"Skipping Wheel Odom Update Pitch: %f",pitch*180/3.1414926);
+																ROS_WARN_STREAM_THROTTLE(10," WO Vel " << vb_wo_.x());
+																ROS_WARN_STREAM_THROTTLE(10," VO Vel " << vb_vo_.x());
 
 								}
 								else{
 
 																if((pitch*180/3.1414926) <-15) {
-																								ROS_WARN("Robot Climbing Up! Pitch: %f",pitch*180/3.1414926);
-																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
-																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+																								ROS_WARN_THROTTLE(10, "Robot Climbing Up! Pitch: %f",pitch*180/3.1414926);
+																								ROS_WARN_STREAM_THROTTLE(10," WO Vel " << vb_wo_.x());
+																								ROS_WARN_STREAM_THROTTLE(10," VO Vel " << vb_vo_.x());
 																								if((pitch*180/3.1414926) <-30) {
-																																ROS_ERROR("Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
+																																ROS_ERROR_THROTTLE(10,"Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
 																																// mobility_.data = IMMOBILE;
 																																// pubMobility_.publish(mobility_);
 																								}
@@ -487,9 +487,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																}
 
 																if((pitch*180/3.1414926) >15) {
-																								ROS_WARN("Robot Climbing Down! Pitch: %f",pitch*180/3.1414926);
-																								ROS_WARN_STREAM(" WO Vel " << vb_wo_.x());
-																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
+																								ROS_WARN_THROTTLE(10,"Robot Climbing Down! Pitch: %f",pitch*180/3.1414926);
+																								ROS_WARN_STREAM_THROTTLE(10," WO Vel " << vb_wo_.x());
+																								ROS_WARN_STREAM_THROTTLE(10," VO Vel " << vb_vo_.x());
 
 																}
 
@@ -527,10 +527,10 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 
 																if (( Innovation.norm()>1.0 && init_true_pose_ ) || std::isnan(Innovation.norm())) {
 																								ROS_ERROR_STREAM("Skipping WO:  Failed Innovation Check " << Innovation.norm());
-																								ROS_INFO_STREAM(" SF: WO Hx " << Hx.transpose()  );
-																								ROS_INFO_STREAM(" WO" << vn_wo.x() << " " << vn_wo.y() << "  "<< vn_wo.z());
-																								ROS_INFO_STREAM(" Innov " << Innovation.transpose());
-																								lastTime_wo_=msg->header.stamp;
+																								// ROS_INFO_STREAM(" SF: WO Hx " << Hx.transpose()  );
+																								// ROS_INFO_STREAM(" WO" << vn_wo.x() << " " << vn_wo.y() << "  "<< vn_wo.z());
+																								// ROS_INFO_STREAM(" Innov " << Innovation.transpose());
+																								 lastTime_wo_=msg->header.stamp;
 																								publishOdom_();
 																								return;
 																}
@@ -720,17 +720,17 @@ void SensorFusion::publishOdom_()
 																{
 																								if (ros::Time::now().toSec() - slipTimer < 25 && slipCount_ > 25)
 																								{
-																																ROS_ERROR_STREAM("Frequent Slip: Slip Count: " << slipCount_);
-																																ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
+																																ROS_ERROR_STREAM_THROTTLE(5,"Frequent Slip: Slip Count: " << slipCount_);
+																																ROS_ERROR_STREAM_THROTTLE(5,"Delta Time: " << ros::Time::now().toSec() - slipTimer);
 																																// ROS_ERROR_STREAM("DRIVING MODE IN SLIP"<<d
 																																if (homingUpdateFlag_)
 																																{
-																																								ROS_ERROR("Rover performed homing recently, skipping high slip flag");
+																																								ROS_ERROR_THROTTLE(5,"Rover performed homing recently, skipping high slip flag");
 																																								homingUpdateFlag_ = false;
 																																}
 																																else
 																																{
-																																								ROS_ERROR_STREAM("Frequent Slip Flag slipCount_=" << slipCount_);
+																																								ROS_ERROR_STREAM_THROTTLE(5,"Frequent Slip Flag slipCount_=" << slipCount_);
 																																								mobility_.data = IMMOBILE;
 																																}
 																																slipCount_ = 0;
@@ -755,12 +755,12 @@ void SensorFusion::publishOdom_()
 																if (slip_ > 0.9)
 																{
 																								slipCount_++;
-																								ROS_ERROR_STREAM("High Slip Detected: " << slip_);
+																								ROS_ERROR_STREAM_THROTTLE(10,"High Slip Detected: " << slip_);
 																}
-																ROS_ERROR_STREAM("Delta Time: " << ros::Time::now().toSec() - slipTimer);
-																ROS_ERROR_STREAM("SlipTimer-Now: " << ros::Time::now().toSec());
-																ROS_ERROR_STREAM("SlipTimer: " << slipTimer);
-																ROS_ERROR_STREAM("Slip Count: " << slipCount_);
+																ROS_ERROR_STREAM_THROTTLE(5,"Delta Time: " << ros::Time::now().toSec() - slipTimer);
+																ROS_ERROR_STREAM_THROTTLE(5,"SlipTimer-Now: " << ros::Time::now().toSec());
+																ROS_ERROR_STREAM_THROTTLE(5,"SlipTimer: " << slipTimer);
+																ROS_ERROR_STREAM_THROTTLE(5,"Slip Count: " << slipCount_);
 																if (mobility_.data == 0) {
 																								ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
 																								ROS_ERROR("Sending immobility flag to Sensor Fusion");
