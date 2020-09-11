@@ -480,8 +480,8 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 																								ROS_WARN_STREAM(" VO Vel " << vb_vo_.x());
 																								if((pitch*180/3.1414926) <-30) {
 																																ROS_ERROR("Robot Cant Climb! Pitch: %f",pitch*180/3.1414926);
-																																mobility_.data = IMMOBILE;
-																																pubMobility_.publish(mobility_);
+																																// mobility_.data = IMMOBILE;
+																																// pubMobility_.publish(mobility_);
 																								}
 
 																}
