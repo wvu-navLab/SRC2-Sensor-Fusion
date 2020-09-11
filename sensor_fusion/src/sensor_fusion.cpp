@@ -223,12 +223,12 @@ bool SensorFusion::getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req
 
 																								// also re-init P
 																								P_ = Q_;
-																								P_(0,0)=1e-6;
-																								P_(1,1)=1e-6;
-																								P_(2,2)=1e-6;
-																								P_(3,3)=1e-6;
-																								P_(4,4)=1e-6;
-																								P_(5,5)=1e-6;
+																								P_(0,0)=1e-3;
+																								P_(1,1)=1e-3;
+																								P_(2,2)=1e-3;
+																								P_(3,3)=1e-1;
+																								P_(4,4)=1e-1;
+																								P_(5,5)=1e-1;
 																								init_true_pose_=true;
 																								res.success = true;
 
@@ -659,7 +659,7 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr& msg)
 								lastTime_vo_ = msg->header.stamp;
 
 								if (Innovation.norm()>.5 || std::isnan(Innovation.norm())) {
-																ROS_INFO_STREAM(" SF: VO update skipped! " );
+																// ROS_INFO_STREAM(" SF: VO update skipped! " );
 																return;
 								}
 								vb_vo_=vb_kimera;
