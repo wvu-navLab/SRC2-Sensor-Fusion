@@ -115,6 +115,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
 
   x_ << 0, 0, 0, 0, 0, 0;
+  last_x_=x_;
 }
 
 void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr &msg) {
@@ -673,6 +674,10 @@ void SensorFusion::publishOdom_() {
     pubMobility_.publish(mobility_);
   }
 
+  if(std::isnan(x_.sum())){
+    x_ = last_x_;
+    P_= Q_;
+  }
   updatedOdom.pose.pose.position.x = x_(0);
   updatedOdom.pose.pose.position.y = x_(1);
   updatedOdom.pose.pose.position.z = x_(2);
@@ -710,6 +715,8 @@ void SensorFusion::publishOdom_() {
   odom_trans.transform.rotation.z = updatedOdom.pose.pose.orientation.z;
   odom_trans.transform.rotation.w = updatedOdom.pose.pose.orientation.w;
   odom_broadcaster_.sendTransform(odom_trans);
+
+  last_x_ =x_;
 }
 
 int main(int argc, char **argv) {

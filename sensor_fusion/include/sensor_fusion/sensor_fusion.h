@@ -107,6 +107,7 @@ private:
     void drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg);
 
     Eigen::Matrix <double, 6, 1> x_;
+    Eigen::Matrix <double, 6, 1> last_x_;
     Eigen::Matrix <double, 6, 6> P_;
     Eigen::Matrix <double, 6, 6> Q_;
     Eigen::Matrix <double, 3, 3> Rwo_;
