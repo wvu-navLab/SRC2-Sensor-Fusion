@@ -423,11 +423,11 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
                         pitch * 180 / 3.1414926);
       ROS_WARN_STREAM_THROTTLE(10, " WO Vel " << vb_wo_.x());
       ROS_WARN_STREAM_THROTTLE(10, " VO Vel " << vb_vo_.x());
-      if ((pitch * 180 / 3.1414926) < -30) {
+      if ((pitch * 180 / 3.1414926) < -35) {
         ROS_ERROR_THROTTLE(10, "Robot Cant Climb! Pitch: %f",
                            pitch * 180 / 3.1414926);
-        // mobility_.data = IMMOBILE;
-        // pubMobility_.publish(mobility_);
+         mobility_.data = IMMOBILE;
+         pubMobility_.publish(mobility_);
       }
     }
 
