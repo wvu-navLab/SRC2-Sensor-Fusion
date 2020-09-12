@@ -158,7 +158,9 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr &msg) {
 
   if (firstWO_)
     R_imu_nav_o_ = R_body_imu_.transpose();
-  if (averageAccel_) {
+  if (averageAccel_ && !std::isnan(msg->linear_acceleration.x )
+    && !std::isnan(msg->linear_acceleration.y ) &&
+  !std::isnan(msg->linear_acceleration.z ) ) {
     //			ROS_ERROR_STREAM("Accel IMU " << msg->linear_acceleration.x << " "
     //<< msg->linear_acceleration.y << " " << msg->linear_acceleration.z);
     accelIMU_(0, 0) = msg->linear_acceleration.x + accelIMU_(0, 0);
@@ -330,7 +332,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
   }
 
   Eigen::MatrixXd accel(3, 1);
-  if (averageAccel_) {
+  if (averageAccel_ && accelCount_>0) {
     // ROS_ERROR_STREAM("Accel IMU " << accelIMU_.transpose());
     // ROS_ERROR_STREAM("Accel IMU Count " << accelCount_);
 
