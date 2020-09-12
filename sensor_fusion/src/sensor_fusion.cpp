@@ -465,8 +465,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
 
     Eigen::Vector3d Hx = Hodom_ * x_;
 
-    if ((Innovation.norm() > 1.0 && init_true_pose_) ||
-        std::isnan(Innovation.norm())) {
+    if ((Innovation.norm() > 1.0 && init_true_pose_) || std::isnan(Innovation.norm()) || driving_mode_==3) {
       ROS_ERROR_STREAM("Skipping WO:  Failed Innovation Check "
                        << Innovation.norm());
       // ROS_INFO_STREAM(" SF: WO Hx " << Hx.transpose()  );
