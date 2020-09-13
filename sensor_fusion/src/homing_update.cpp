@@ -13,6 +13,12 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 
 
 }
+bool HomingUpdate::setBaseLocation_(sensor_fusion::SetBaseLocation::Request &req, sensor_fusion::SetBaseLocation::Response &res){
+
+						baseStationLocation_ = req.base_location;
+						res.success = true;
+						return true;
+}
 
 bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sensor_fusion::HomingUpdate::Response &res){
 
