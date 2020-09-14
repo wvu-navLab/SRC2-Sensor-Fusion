@@ -73,7 +73,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       "/state_machine/localized_base_" + robot_name, 100);
 
   pubMobility_ = nh_.advertise<std_msgs::Int64>(
-      "/state_machine/mobility_" + robot_name, 10);
+      "/state_machine/mobility_" + robot_name, 1);
 
   pubSlip_ = nh_.advertise<geometry_msgs::PointStamped>(
       "localization/odometry/slip", 1);
@@ -428,7 +428,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
       ROS_WARN_STREAM_THROTTLE(10, " WO Vel " << vb_wo_.x());
       ROS_WARN_STREAM_THROTTLE(10, " VO Vel " << vb_vo_.x());
       if ((pitch * 180 / 3.1414926) < -35) {
-        ROS_ERROR_THROTTLE(10, "Robot Cant Climb! Pitch: %f",
+        ROS_ERROR("Robot Cant Climb! Pitch: %f",
                            pitch * 180 / 3.1414926);
          mobility_.data = IMMOBILE;
          pubMobility_.publish(mobility_);
