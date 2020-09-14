@@ -86,6 +86,7 @@ private:
     ros::Time lastTime_wo_;
     ros::Time lastTime_vo_;
     ros::Time slipTimer_;
+    ros::Time start_time_dist;
 
     ros::Subscriber subVO_;
     ros::Subscriber subImu_;
@@ -100,6 +101,9 @@ private:
     double slipTimer =0;
     double yawTimer=0;
     double yaw_pre=0;
+    double distDiff=0;
+    double distNow=0;
+    double distPrev=0;
     void voCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);

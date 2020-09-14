@@ -48,6 +48,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
   mobility_.data = MOBILE;
   averageAccel_ = true;
   accelCount_ = 0;
+  start_time_dist = ros::Time::now();
 
   // initialized_=NOT_INITIALIZED;
 
@@ -717,6 +718,24 @@ void SensorFusion::publishOdom_() {
   odom_broadcaster_.sendTransform(odom_trans);
 
   last_x_ =x_;
+
+
+
+  ros::Duration distanceTimer(120.0); // Timeout of 20 seconds
+
+  if (ros::Time::now() - start_time_dist < ros::Duration(1.0)) {
+    distPrev = sqrt(pow(updatedOdom.pose.pose.position.x, 2) + pow(updatedOdom.pose.pose.position.y, 2));
+  } else if (ros::Time::now() -start_time_dist > distanceTimer) {
+    distNow = sqrt(pow(updatedOdom.pose.pose.position.x, 2) + pow(updatedOdom.pose.pose.position.y, 2));
+    distDiff= fabs(distNow - distPrev);
+    ROS_ERROR_STREAM("DistDiff: " << distDiff);
+    start_time_dist = ros::Time::now();
+  }
+// ROS_ERROR_STREAM("DistPrev???: " << distPrev);
+// ROS_ERROR_STREAM("DistNow???: " << distNow);
+// ROS_ERROR_STREAM("DistDiff???: " << distDiff);
+
+
 }
 
 int main(int argc, char **argv) {
