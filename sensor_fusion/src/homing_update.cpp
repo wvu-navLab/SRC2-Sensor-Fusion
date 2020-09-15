@@ -26,6 +26,10 @@ bool HomingUpdate::homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sens
 								range_to_base::LocationOfBase srv;
 
 								srv.request.angle = req.angle;
+								while (!baseLocationClient_.waitForExistence())
+								{
+										ROS_WARN("HOMING: Waiting for Location of Base Service");
+								}
 							  baseLocationClient_.call(srv);
 
 
