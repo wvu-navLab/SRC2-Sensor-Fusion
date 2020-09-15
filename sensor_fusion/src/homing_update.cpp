@@ -7,6 +7,7 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 
 								baseLocationClient_ = nh_.serviceClient<range_to_base::LocationOfBase>("location_of_base_service");
 								homingUpdateServer_ = nh_.advertiseService("homing",&HomingUpdate::homingUpdate_,this);
+								setBaseLocationServer_ = nh_.advertiseService("set_base_location",&HomingUpdate::setBaseLocation_,this);
 
 								pubMeasurementUpdate_ = nh_.advertise<geometry_msgs::Pose>("position_update",10);
 								pubBaseLocation_ = nh_.advertise<geometry_msgs::Point>("base_station",10);
