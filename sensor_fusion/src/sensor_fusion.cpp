@@ -430,6 +430,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
       if ((pitch * 180 / 3.1414926) < -35) {
         ROS_ERROR("Robot Cant Climb! Pitch: %f",
                            pitch * 180 / 3.1414926);
+                           ROS_ERROR("SENDING IMMOBILITY FLAG TO MOBILE CHEcKER");
          mobility_.data = IMMOBILE;
          pubMobility_.publish(mobility_);
       }
@@ -669,7 +670,7 @@ void SensorFusion::publishOdom_() {
     ROS_ERROR_STREAM_THROTTLE(5, "Slip Count: " << slipCount_);
     if (mobility_.data == 0) {
       ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
-      ROS_ERROR("Sending immobility flag to State Machine");
+      ROS_ERROR("Sending immobility flag to Mobility Checker");
     }
     // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
     pubMobility_.publish(mobility_);
