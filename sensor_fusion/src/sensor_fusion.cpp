@@ -520,6 +520,13 @@ void SensorFusion::positionUpdateCallback_(
 
   ROS_WARN("Homing Update in Sensor Fusion");
 
+  // handle the excavtor position update.
+  double scalar=1;
+  if(msg->orientation.x){
+    ROS_WARN("Scaling the Position Error Covariance By Dumping Mass");
+    scalar=(50.0*50.0)/(msg->orientation.x*msg->orientation.x);
+  }
+
   zPosition_(0, 0) = x_[0] + msg->position.x;
   zPosition_(1, 0) = x_[1] + msg->position.y;
   zPosition_(2, 0) = 0.0;
@@ -527,7 +534,7 @@ void SensorFusion::positionUpdateCallback_(
   zPosition_(4, 0) = 0.0;
   zPosition_(5, 0) = 0.0;
   Eigen::MatrixXd S(6, 6);
-  S = Rposition_ + Hposition_ * P_ * Hposition_.transpose();
+  S = scalar*Rposition_ + Hposition_ * P_ * Hposition_.transpose();
 
   Eigen::MatrixXd K(6, 6);
   K = (P_ * Hposition_.transpose()) * S.inverse();
