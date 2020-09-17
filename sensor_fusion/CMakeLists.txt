@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   srcp2_msgs
   tf
   range_to_base
+  laser_tools_src2
   std_srvs
 )
 
@@ -116,7 +117,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS message_runtime message_generation std_msgs nav_msgs geometry_msgs sensor_msgs
+  CATKIN_DEPENDS message_runtime message_generation std_msgs nav_msgs geometry_msgs sensor_msgs range_to_base laser_tools_src2
 #  DEPENDS system_lib
 )
 
@@ -159,7 +160,7 @@ add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp)
 
 add_executable(homing_update src/homing_update.cpp)
 target_link_libraries(homing_update ${catkin_LIBRARIES})
-add_dependencies(homing_update sensor_fusion_generate_messages_cpp)
+add_dependencies(homing_update sensor_fusion_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
