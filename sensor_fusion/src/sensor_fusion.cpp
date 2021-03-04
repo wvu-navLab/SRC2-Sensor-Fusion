@@ -221,6 +221,7 @@ bool SensorFusion::getTruePoseFromSRC2_(
       return false;
     }
   }
+  return false;
 }
 
 void SensorFusion::drivingModeCallback_(const std_msgs::Int64::ConstPtr &msg) {
