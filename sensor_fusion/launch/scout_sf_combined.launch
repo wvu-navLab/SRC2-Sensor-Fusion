@@ -3,15 +3,7 @@
 <launch>
   <include file="$(find wvu_vo_ros)/launch/vo_pipelineScout.launch"/>
   
-
   <include file="$(find rover_deadreckoning)/launch/scout_dead_reckoning.launch"/>
-
-
-  <include file="$(find teleop_modes)/launch/scout_teleop_modes.launch"/>
-
-  <include file="$(find gazebo_truth_odom)/launch/scout_gazebo_truth_odom"/>
-
-
 
   <include file="$(find sensor_fusion)/launch/scout_kf_gyro_attitude.launch" >
   </include>
