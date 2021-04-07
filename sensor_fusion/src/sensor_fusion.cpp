@@ -70,10 +70,10 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       "localization/odometry/sensor_fusion", 1);
 
   pubStatus_ = nh_.advertise<std_msgs::Int64>(
-      "/state_machine/localized_base_" + robot_name, 100);
+      "state_machine/localized_base", 100);
 
   pubMobility_ = nh_.advertise<std_msgs::Int64>(
-      "/state_machine/mobility_" + robot_name, 1);
+      "state_machine/mobility" , 1);
 
   pubSlip_ = nh_.advertise<geometry_msgs::PointStamped>(
       "localization/odometry/slip", 1);
