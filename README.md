@@ -1,7 +1,7 @@
 # SRC2-Sensor Fusion
-Need: SRC2-vo-ros (+SRC2-image-selector), SRC2-localization-wo, SRC2-driving(teleop)
+Need: SRC2-vo-ros (+SRC2-image-selector), SRC2-localization-wo, SRC2-driving(teleop), SRC2-gazebo-truth-odom
 Running scout_sensor_fusion.launch 
-(TODO: combine into 1 launch file)
+(running scout_sf_combined.launch will launch all of these)
 ```
 roslaunch wvu_vo_ros vo_pipelineScout.launch
 roslaunch rover_deadreckoning scout_dead_reckoning.launch
