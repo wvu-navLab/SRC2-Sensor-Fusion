@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<launch>
+  <include file="$(find wvu_vo_ros)/launch/vo_pipelineHauler.launch"/>
+  
+
+  <include file="$(find rover_deadreckoning)/launch/hauler_dead_reckoning.launch"/>
+
+
+  <include file="$(find sensor_fusion)/launch/hauler_kf_gyro_attitude.launch" >
+  </include>
+
+  <include file="$(find sensor_fusion)/launch/hauler_localization.launch" >
+  </include>
+
+</launch>
