@@ -663,24 +663,23 @@ void SensorFusion::publishOdom_() {
       }
     }
     slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
-    slip.point.y = vb_wo_.x();
-    slip.point.z = vb_vo_.x();
+    slip.point.y = vb_wo_.x(); //y
+    slip.point.z = vb_vo_.x(); //z
     slip.header.stamp = lastTime_wo_;
     slip.header.frame_id = odometry_frame_id;
     // pubSlip_.publish(slip);
     slip_ = fabs(slip.point.x);
-    if (slip_ > 0.9) {
+    if (slip_ > 0.9 && slip_<1.0) {
       slipCount_++;
-      ROS_ERROR_STREAM_THROTTLE(10, "High Slip Detected: " << slip_);
+      ROS_ERROR_STREAM_THROTTLE(10, "High Longitidunal Slip Detected: " << slip_);
     }
-    ROS_ERROR_STREAM_THROTTLE(5, "Delta Time: " << ros::Time::now().toSec() -
-                                                       slipTimer);
-    ROS_ERROR_STREAM_THROTTLE(5, "SlipTimer-Now: " << ros::Time::now().toSec());
-    ROS_ERROR_STREAM_THROTTLE(5, "SlipTimer: " << slipTimer);
-    ROS_ERROR_STREAM_THROTTLE(5, "Slip Count: " << slipCount_);
+    // ROS_ERROR_STREAM_THROTTLE(5, "Delta Time: " << ros::Time::now().toSec() - slipTimer);
+    // ROS_ERROR_STREAM_THROTTLE(5, "SlipTimer-Now: " << ros::Time::now().toSec());
+    // ROS_ERROR_STREAM_THROTTLE(5, "SlipTimer: " << slipTimer);
+    // ROS_ERROR_STREAM_THROTTLE(5, "Slip Count: " << slipCount_);
     if (mobility_.data == 0) {
-      ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
-      ROS_ERROR("Sending immobility flag to Mobility Checker");
+      // ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
+      // ROS_ERROR("Sending immobility flag to Mobility Checker");
     }
     // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
     pubMobility_.publish(mobility_);
