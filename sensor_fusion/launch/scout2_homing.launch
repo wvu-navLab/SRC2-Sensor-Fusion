@@ -1,0 +1,10 @@
+<launch>
+  <group ns="small_scout_2">
+
+    <node pkg="sensor_fusion" name="homing_update" type="homing_update" output="screen">
+
+    </node>
+
+  </group>
+
+</launch>

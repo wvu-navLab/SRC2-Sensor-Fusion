@@ -1,0 +1,12 @@
+<launch>
+  <group ns="small_scout_2">
+
+    <node pkg="sensor_fusion"
+          name="kf_attitude_gyro"
+          type="kf_attitude_gyro"
+          output="screen">
+    </node>
+
+  </group>
+
+</launch>

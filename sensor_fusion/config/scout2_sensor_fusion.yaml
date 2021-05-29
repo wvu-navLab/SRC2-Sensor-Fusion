@@ -1,0 +1,4 @@
+odometry_child_frame_id : "small_scout_2_base_footprint"
+odometry_frame_id : "small_scout_2_odom"
+position_update_topic : "position_update"
+robot_name : "small_scout_2"
