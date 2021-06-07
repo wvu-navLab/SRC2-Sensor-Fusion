@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+  <include file="$(find sensor_fusion)/launch/kf_gyro_attitude.launch" >
+  </include>
+
+  <include file="$(find sensor_fusion)/launch/localization.launch" >
+  </include>
+
+</launch>

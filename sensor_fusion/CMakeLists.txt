@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.0.2)
 project(sensor_fusion)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -129,7 +129,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
  include
-  ~/srcp2-competitors/ros_workspace/install/include
+  ~/ros_workspace/install/include
   ${catkin_INCLUDE_DIRS}
 )
 

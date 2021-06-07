@@ -1,0 +1,3 @@
+odometry_child_frame_id : "_base_footprint"
+odometry_frame_id : "_odom"
+position_update_topic : "position_update"

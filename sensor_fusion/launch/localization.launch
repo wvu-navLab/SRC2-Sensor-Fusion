@@ -1,15 +1,12 @@
 <launch>
-  <group ns="small_excavator_1">
 
     <node pkg="sensor_fusion" name="sensor_fusion" type="sensor_fusion" output="screen">
       <rosparam
        command="load"
-       file="$(find sensor_fusion)/config/excavator_sensor_fusion.yaml"
+       file="$(find sensor_fusion)/config/config.yaml"
        subst_value="true"
      />
 
     </node>
-
-  </group>
 
 </launch>

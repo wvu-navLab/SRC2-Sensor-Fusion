@@ -5,26 +5,31 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
   std::string node_name = "sensor_fusion";
   std::string robot_name;
 
+  if (ros::param::get("robot_name", robot_name) == false) {
+    ROS_FATAL("No parameter 'robot_name' specified");
+    ros::shutdown();
+    exit(1);
+  }
+
   if (ros::param::get(node_name + "/odometry_frame_id", odometry_frame_id) ==
       false) {
     ROS_FATAL("No parameter 'odometry_frame_id' specified");
     ros::shutdown();
     exit(1);
   }
+  odometry_frame_id = robot_name + odometry_frame_id;
+  
   if (ros::param::get(node_name + "/odometry_child_frame_id",
                       odometry_child_frame_id) == false) {
     ROS_FATAL("No parameter 'odometry_child_frame_id' specified");
     ros::shutdown();
     exit(1);
   }
+  odometry_child_frame_id = robot_name + odometry_child_frame_id;
+
   if (ros::param::get(node_name + "/position_update_topic",
                       position_update_topic) == false) {
     ROS_FATAL("No parameter 'position_update_topic' specified");
-    ros::shutdown();
-    exit(1);
-  }
-  if (ros::param::get(node_name + "/robot_name", robot_name) == false) {
-    ROS_FATAL("No parameter 'robot_name' specified");
     ros::shutdown();
     exit(1);
   }
