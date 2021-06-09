@@ -10,9 +10,19 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 	setBaseLocationServer_ = nh_.advertiseService("set_base_location",&HomingUpdate::setBaseLocation_,this);
 
 	pubMeasurementUpdate_ = nh_.advertise<geometry_msgs::Pose>("position_update",10);
-	pubBaseLocation_ = nh_.advertise<geometry_msgs::Point>("base_station",10);
+	pubBaseLocation_ = nh_.advertise<geometry_msgs::Point>("/base_station",10);
 
+	subBaseLocation_ = nh_.subscribe(
+			"/base_station", 1, &HomingUpdate::baseLocationCallback_, this);
 
+}
+void HomingUpdate::baseLocationCallback_(const geometry_msgs::Point::ConstPtr& msg){
+
+	baseStationLocation_.x = msg->x;
+	baseStationLocation_.y = msg->y;
+	baseStationLocation_.z = 0.0;
+
+	ROS_INFO(" Saving Base Station as Landmark x:%f y:%f", baseStationLocation_.x, baseStationLocation_.y);
 }
 bool HomingUpdate::setBaseLocation_(sensor_fusion::SetBaseLocation::Request &req, sensor_fusion::SetBaseLocation::Response &res){
 

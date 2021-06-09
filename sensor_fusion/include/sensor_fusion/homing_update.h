@@ -31,6 +31,7 @@ private:
 
 	ros::Publisher pubMeasurementUpdate_;
 	ros::Publisher pubBaseLocation_;
+	ros::Subscriber subBaseLocation_;
 	ros::ServiceServer homingUpdateServer_;
 	ros::ServiceServer setBaseLocationServer_;
 
@@ -38,8 +39,12 @@ private:
 
 	geometry_msgs::Point baseStationLocation_;
 	geometry_msgs::Pose measurementUpdate_;
+
+
 	bool homingUpdate_(sensor_fusion::HomingUpdate::Request &req, sensor_fusion::HomingUpdate::Response &res);
 	bool setBaseLocation_(sensor_fusion::SetBaseLocation::Request &req, sensor_fusion::SetBaseLocation::Response &res);
+
+	void baseLocationCallback_(const geometry_msgs::Point::ConstPtr& msg);
 
 };
 
