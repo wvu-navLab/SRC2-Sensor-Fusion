@@ -743,7 +743,7 @@ void SensorFusion::publishOdom_() {
   } else if (ros::Time::now() -start_time_dist > distanceTimer) {
     distNow = sqrt(pow(updatedOdom.pose.pose.position.x, 2) + pow(updatedOdom.pose.pose.position.y, 2));
     distDiff= fabs(distNow - distPrev);
-    ROS_ERROR_STREAM("DistDiff: " << distDiff);
+    // ROS_ERROR_STREAM("DistDiff: " << distDiff);
     start_time_dist = ros::Time::now();
   }
 // ROS_ERROR_STREAM("DistPrev???: " << distPrev);

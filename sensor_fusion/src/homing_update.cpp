@@ -95,8 +95,10 @@ int main(int argc, char **argv)
 
 	HomingUpdate homing(nh);
 
+	ros::Rate rate(10);
 	while(ros::ok())
 	{
 		ros::spinOnce();
+		rate.sleep();
 	}
 }
