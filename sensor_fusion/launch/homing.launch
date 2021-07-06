@@ -1,7 +1,13 @@
 <launch>
 
     <node pkg="sensor_fusion" name="homing_update" type="homing_update" output="screen">
+      <rosparam
+       command="load"
+       file="$(find sensor_fusion)/config/homing.yaml"
+       subst_value="true"
+     />
     </node>
+
 
 
 </launch>

@@ -4,7 +4,7 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 	: nh_(nh)
 {
 	firstCallback_=true;
-
+  std::string node_name = "homing_update";
 	baseLocationClient_ = nh_.serviceClient<range_to_base::LocationOfBase>("location_of_base_service");
 	homingUpdateServer_ = nh_.advertiseService("homing",&HomingUpdate::homingUpdate_,this);
 	setBaseLocationServer_ = nh_.advertiseService("set_base_location",&HomingUpdate::setBaseLocation_,this);
@@ -14,7 +14,23 @@ HomingUpdate::HomingUpdate(ros::NodeHandle & nh)
 
 	subBaseLocation_ = nh_.subscribe(
 			"/base_station", 1, &HomingUpdate::baseLocationCallback_, this);
+			double base_x, base_y;
+	if (ros::param::get(node_name + "/base_x", base_x ) ==
+		  false) {
+		  ROS_FATAL("No parameter 'base_x' specified");
+		  ros::shutdown();
+		  exit(1);
+	 }
 
+	if (ros::param::get(node_name + "/base_y", base_y ) ==
+				false) {
+			ROS_FATAL("No parameter 'base_y' specified");
+			ros::shutdown();
+			exit(1);
+		}
+		baseStationLocation_.x = base_x;
+		baseStationLocation_.y = base_y;
+		ROS_INFO(" Saving Base Station as Landmark x:%f y:%f", base_y, base_y);
 }
 void HomingUpdate::baseLocationCallback_(const geometry_msgs::Point::ConstPtr& msg){
 
