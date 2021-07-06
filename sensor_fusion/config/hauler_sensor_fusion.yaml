@@ -1,4 +1,0 @@
-odometry_child_frame_id : "small_hauler_1_base_footprint"
-odometry_frame_id : "small_hauler_1_odom"
-position_update_topic : "position_update"
-robot_name : "small_hauler_1"
