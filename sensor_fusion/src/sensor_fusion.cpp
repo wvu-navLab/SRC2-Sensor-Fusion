@@ -18,7 +18,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
     exit(1);
   }
   odometry_frame_id = robot_name + odometry_frame_id;
-  
+
   if (ros::param::get(node_name + "/odometry_child_frame_id",
                       odometry_child_frame_id) == false) {
     ROS_FATAL("No parameter 'odometry_child_frame_id' specified");
@@ -207,7 +207,7 @@ bool SensorFusion::getTruePoseFromSRC2_(
       x_(3, 0) = 0.0;
       x_(4, 0) = 0.0;
       x_(5, 0) = 0.0;
-
+      init_pos_z_= pose_.position.z;
       // also re-init P
       P_ = Q_;
       P_(0, 0) = 1e-3;
@@ -537,7 +537,8 @@ void SensorFusion::positionUpdateCallback_(
 
   zPosition_(0, 0) = x_[0] + msg->position.x;
   zPosition_(1, 0) = x_[1] + msg->position.y;
-  zPosition_(2, 0) = 0.0;
+  zPosition_(2, 0) = init_pos_z_;
+  // zPosition_(2, 0) = 0.0;
   zPosition_(3, 0) = 0.0;
   zPosition_(4, 0) = 0.0;
   zPosition_(5, 0) = 0.0;
@@ -696,7 +697,8 @@ void SensorFusion::publishOdom_() {
   }
   updatedOdom.pose.pose.position.x = x_(0);
   updatedOdom.pose.pose.position.y = x_(1);
-  updatedOdom.pose.pose.position.z = x_(2);
+  // updatedOdom.pose.pose.position.z = x_(2);
+  updatedOdom.pose.pose.position.z = init_pos_z_;
 
   updatedOdom.pose.pose.orientation.x = qup.x();
   updatedOdom.pose.pose.orientation.y = qup.y();

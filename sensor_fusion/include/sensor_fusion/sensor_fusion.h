@@ -94,6 +94,7 @@ private:
     ros::Subscriber subPositionUpdate_;
     ros::Subscriber subDrivingMode_;
 
+    double init_pos_z_;
     double rollInc_;
     double pitchInc_;
     double yawInc_;
