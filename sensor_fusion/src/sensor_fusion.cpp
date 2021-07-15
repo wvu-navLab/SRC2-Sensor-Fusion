@@ -173,9 +173,13 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
   last_x_=x_;
 
 }
+void SensorFusion::PublishInitAttitude()
+{
+        pubInitAttitude_.publish(q_msg);
+}
 void SensorFusion::attitudeInitCallback_( const geometry_msgs::Quaternion::ConstPtr &msg){
   // if this robot already got true attitude from SRC2.  Do nothing. Just return
-  if(true_pose_from_src2)
+  if(true_pose_from_src2 || init_true_pose_ )
   {
       return;
   }
@@ -268,12 +272,12 @@ bool SensorFusion::getTruePoseFromSRC2_(
       // if called to initialize, call topic to initialize others
       if(req.initialize)
       {
-          geometry_msgs::Quaternion q_msg;
           q_msg.x = q.x();
           q_msg.y = q.y();
           q_msg.z = q.z();
           q_msg.w = q.w();
           pubInitAttitude_.publish(q_msg);
+          have_init_attitude =true;
       }
 
       tf::Matrix3x3 R_init_true_b_n(q);
@@ -841,11 +845,19 @@ int main(int argc, char **argv) {
   SensorFusion localizer(nh);
 
   // ros::spin();
+  int counter =0;
   while (ros::ok()) {
 
     localizer.initializationStatus_();
     ros::spinOnce();
+    if(localizer.have_init_attitude && counter ==100)
+    {
+      localizer.PublishInitAttitude();
+      counter = 0;
+    }
     rate.sleep();
+    counter = counter +1;
+
   }
 
   return 0;

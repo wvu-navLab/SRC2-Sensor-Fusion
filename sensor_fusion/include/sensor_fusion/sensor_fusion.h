@@ -44,6 +44,8 @@ public:
 
     SensorFusion(ros::NodeHandle &);
     void initializationStatus_();
+    void PublishInitAttitude();
+    bool have_init_attitude =false;
 
 private:
    bool averageAccel_;
@@ -57,7 +59,7 @@ private:
 
     ros::ServiceServer getTruePoseServer_;
     bool getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req, sensor_fusion::GetTruePose::Response &res);
-
+    geometry_msgs::Quaternion q_msg;
     // initial global body to nav attitude, from truth
     tf::Matrix3x3 R_imu_nav_o_;
 
