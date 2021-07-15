@@ -403,8 +403,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
     Rbn_ = R_imu_nav_o_ * R_body_imu_;
     vn_imu = Rbn_ * vb_wo;
 
-    x_ << pose_.position.x, pose_.position.y, pose_.position.z, vn_imu.x(),
-        vn_imu.y(), vn_imu.z();
+    x_(3,1)= vn_imu.x();
+    x_(4,1)= vn_imu.y();
+    x_(5,1)= vn_imu.z();
   }
 
   // std::cout <<"Wheel Odom Callback " << std::endl;
