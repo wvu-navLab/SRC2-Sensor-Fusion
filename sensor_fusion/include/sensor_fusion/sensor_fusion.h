@@ -23,6 +23,7 @@
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Quaternion.h>
 #include <eigen3/Eigen/Dense>
 #include <std_msgs/Int64.h>
 #include <tf/transform_broadcaster.h>
@@ -49,7 +50,7 @@ private:
    double accelCount_;
     ros::NodeHandle & nh_;
 
-    ros::Publisher pubOdom_, pubStatus_, pubSlip_, pubMobility_;
+    ros::Publisher pubOdom_, pubStatus_, pubSlip_, pubMobility_, pubInitAttitude_;
 
 
     ros::ServiceClient src2GetTruePoseClient_;
@@ -75,9 +76,11 @@ private:
     bool firstVO_;
     bool firstIMU_;
     bool init_true_pose_;
+    bool init_true_position_;
+    bool init_true_attitude_;
     bool high_slip_flag_= false;
     bool homingUpdateFlag_=false;
-
+    bool true_pose_from_src2 =false;
     int initialized_;
     int slipCount_=0;
     std_msgs::Int64 status_;
@@ -93,8 +96,11 @@ private:
     ros::Subscriber subWheelOdom_;
     ros::Subscriber subPositionUpdate_;
     ros::Subscriber subDrivingMode_;
+    ros::Subscriber subInitAttitude_;
 
     double init_pos_z_;
+    double init_x;
+    double init_y;
     double rollInc_;
     double pitchInc_;
     double yawInc_;
@@ -110,6 +116,7 @@ private:
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg);
     void drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg);
+    void attitudeInitCallback_(const geometry_msgs::Quaternion::ConstPtr& msg);
 
     Eigen::Matrix <double, 6, 1> x_;
     Eigen::Matrix <double, 6, 1> last_x_;
