@@ -3,7 +3,7 @@
 SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
 
   std::string node_name = "sensor_fusion";
-  std::string robot_name;
+  // std::string robot_name;
 
   if (ros::param::get("robot_name", robot_name) == false) {
     ROS_FATAL("No parameter 'robot_name' specified");
@@ -552,6 +552,8 @@ void SensorFusion::positionUpdateCallback_(
   P_ = (I - K * Hposition_) * P_;
   x_ = x_ + K * (zPosition_ - Hposition_ * x_);
   homingUpdateFlag_ = true;
+  x_diff_=0;
+  y_diff_=0;
 }
 
 void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
@@ -637,31 +639,47 @@ void SensorFusion::publishOdom_() {
   // slip check
 
   if (vb_wo_.length() != 0.0 && status_.data == INITIALIZED &&
-      vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ == 2) {
+      vb_vo_.length() < .2 && vb_wo_.length() > .1 && driving_mode_ == 2 && init_true_pose_== true) {
     mobility_.data = MOBILE; // TODO: It might be here too! If it is immobile at
                              // the previous step, it sends immobile again.
-    if (slipTimer == 0) {
+
+
+    if (slipTimer == 0)
+    {
       slipTimer = ros::Time::now().toSec();
-    } else {
-      if (ros::Time::now().toSec() - slipTimer < 25 && slipCount_ > 25) {
-        ROS_ERROR_STREAM_THROTTLE(5,
-                                  "Frequent Slip: Slip Count: " << slipCount_);
-        ROS_ERROR_STREAM_THROTTLE(
-            5, "Delta Time: " << ros::Time::now().toSec() - slipTimer);
+      temp_x_ = x_(0);
+      temp_y_ = x_(1);
+    }
+    else
+    {
+      if (ros::Time::now().toSec() - slipTimer < 25 && slipCount_ > 40 && ros::Time::now().toSec() - slipTimer > 2)
+      {
+        ROS_ERROR_STREAM_THROTTLE(5,"Frequent Slip: Slip Count: " << slipCount_);
+        ROS_ERROR_STREAM_THROTTLE(5, "Delta Time: " << ros::Time::now().toSec() - slipTimer);
         // ROS_ERROR_STREAM("DRIVING MODE IN SLIP"<<d
-        if (homingUpdateFlag_) {
-          ROS_ERROR_THROTTLE(
-              5, "Rover performed homing recently, skipping high slip flag");
+        if (homingUpdateFlag_)
+        {
+          ROS_ERROR_THROTTLE(5, "Rover performed homing recently, skipping high slip flag");
           homingUpdateFlag_ = false;
-        } else {
-          ROS_ERROR_STREAM_THROTTLE(
-              5, "Frequent Slip Flag slipCount_=" << slipCount_);
+        }
+        else
+        {
+          ROS_ERROR_STREAM("Immobility!" << slipCount_);
+          ROS_ERROR_STREAM_THROTTLE(5, "Delta Time: " << ros::Time::now().toSec() - slipTimer);
+          // slipped_x_ = x_(0);
+          // slipped_y_ = x_(1);
+          // x_diff_ = slipped_x_ - temp_x_;
+          // y_diff_ = slipped_y_ - temp_y_;
+
           mobility_.data = IMMOBILE;
         }
         slipCount_ = 0;
         slipTimer = 0;
-      } else {
-        if (ros::Time::now().toSec() - slipTimer > 25) {
+      }
+      else
+      {
+        if (ros::Time::now().toSec() - slipTimer > 25)
+        {
           slipTimer = 0;
           slipCount_ = 0;
         }
@@ -669,22 +687,40 @@ void SensorFusion::publishOdom_() {
       }
     }
     slip.point.x = (vb_wo_.x() - vb_vo_.x()) / vb_wo_.x();
-    slip.point.y = vb_wo_.x(); //y
-    slip.point.z = vb_vo_.x(); //z
+    slip.point.y = (vb_wo_.y() - vb_vo_.y()) / vb_wo_.y();
+    slip.point.z = 0; //z
     slip.header.stamp = lastTime_wo_;
     slip.header.frame_id = odometry_frame_id;
     // pubSlip_.publish(slip);
     slip_ = fabs(slip.point.x);
-    if (slip_ > 0.9 && slip_<1.0) {
+    if (slip_ > 0.9 && slip_<1.0)
+    {
       slipCount_++;
-      ROS_ERROR_STREAM_THROTTLE(10, "High Longitidunal Slip Detected: " << slip_);
+      ROS_ERROR_STREAM_THROTTLE(5, "High Longitidunal Slip Detected: " << slip_);
     }
-    // ROS_ERROR_STREAM_THROTTLE(5, "Delta Time: " << ros::Time::now().toSec() - slipTimer);
-    // ROS_ERROR_STREAM_THROTTLE(5, "SlipTimer-Now: " << ros::Time::now().toSec());
-    // ROS_ERROR_STREAM_THROTTLE(5, "SlipTimer: " << slipTimer);
-    // ROS_ERROR_STREAM_THROTTLE(5, "Slip Count: " << slipCount_);
-    if (mobility_.data == 0) {
-      // ROS_ERROR_STREAM("ROVER IS STUCK: " << mobility_.data);
+    if (fabs(slip.point.y) > 0.9 && fabs(slip.point.y)<1.0)
+    {
+      ROS_ERROR_STREAM_THROTTLE(5, "High Lateral Slip Detected: " << slip.point.y);
+    }
+    if (mobility_.data == 0)
+    {
+      slipped_x_ = x_(0);
+      slipped_y_ = x_(1);
+      x_diff_ = x_diff_ + slipped_x_ - temp_x_;
+      y_diff_ = x_diff_ + slipped_y_ - temp_y_;
+
+      ROS_ERROR_STREAM("[" << robot_name << "] " <<"Rover is possibly stuck!");
+      ROS_INFO_STREAM("[" << robot_name << "] " <<"Accumulated x_diff: " << x_diff_);
+      ROS_INFO_STREAM("[" << robot_name << "] " <<"Accumulated y_diff: " << y_diff_);
+      ROS_INFO_STREAM("[" << robot_name << "] " <<"temp_x: " << temp_x_);
+      ROS_INFO_STREAM("[" << robot_name << "] " <<"temp_y: " << temp_y_);
+      ROS_INFO_STREAM("[" << robot_name << "] " <<"slipped_x: " << slipped_x_);
+      ROS_INFO_STREAM("[" << robot_name << "] " <<"slipped_y: " << slipped_y_);
+      ROS_ERROR_STREAM("Frequent Slip Flag, slipCount_= " << slipCount_);
+      temp_x_=x_(0);
+      temp_y_=x_(1);
+
+
       // ROS_ERROR("Sending immobility flag to Mobility Checker");
     }
     // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
@@ -745,7 +781,7 @@ void SensorFusion::publishOdom_() {
   } else if (ros::Time::now() -start_time_dist > distanceTimer) {
     distNow = sqrt(pow(updatedOdom.pose.pose.position.x, 2) + pow(updatedOdom.pose.pose.position.y, 2));
     distDiff= fabs(distNow - distPrev);
-    // ROS_ERROR_STREAM("DistDiff: " << distDiff);
+    // ROS_ERROR_STREAM("Distance changed in 120 seconds, Diff: " << distDiff);
     start_time_dist = ros::Time::now();
   }
 // ROS_ERROR_STREAM("DistPrev???: " << distPrev);

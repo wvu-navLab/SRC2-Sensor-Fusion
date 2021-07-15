@@ -105,6 +105,12 @@ private:
     double distDiff=0;
     double distNow=0;
     double distPrev=0;
+    double temp_x_;
+    double temp_y_;
+    double slipped_x_;
+    double slipped_y_;
+    double x_diff_;
+    double y_diff_;
     void voCallback_(const nav_msgs::Odometry::ConstPtr& msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
@@ -137,6 +143,8 @@ private:
     std::string odometry_frame_id;
     std::string odometry_child_frame_id;
     std::string position_update_topic;
+    std::string robot_name;
+
     ros::ServiceClient clt_restart_kimera_;
 
 
