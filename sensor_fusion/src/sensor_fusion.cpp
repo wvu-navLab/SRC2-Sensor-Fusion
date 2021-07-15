@@ -60,19 +60,6 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
   {
   position_parm_count = position_parm_count +1;
   }
-  if(  position_parm_count == 2)
-  {
-    x_(0, 0) = init_x;
-    x_(1, 0) = init_y;
-    x_(2, 0) = 1.65;
-    x_(3, 0) = 0.0;
-    x_(4, 0) = 0.0;
-    x_(5, 0) = 0.0;
-    init_true_position_ = true;
-
-    ROS_ERROR_STREAM("SENSOR FUSION " << robot_name << " Initial X " << init_x << " Initial Y " << init_y);
-
-  }
 
   src2GetTruePoseClient_ =
       nh_.serviceClient<srcp2_msgs::LocalizationSrv>("get_true_pose");
@@ -108,8 +95,8 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
 
   subDrivingMode_ = nh_.subscribe("driving/driving_mode", 1,
                                   &SensorFusion::drivingModeCallback_, this);
-
   subPositionUpdate_ = nh_.subscribe(
+
       position_update_topic, 1, &SensorFusion::positionUpdateCallback_, this);
 
   subPositionUpdate_ = nh_.subscribe(
@@ -168,7 +155,23 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
 
   x_ << 0, 0, 0, 0, 0, 0;
+  if(  position_parm_count == 2)
+  {
+    x_(0, 0) = init_x;
+    x_(1, 0) = init_y;
+    x_(2, 0) = 1.65;
+    x_(3, 0) = 0.0;
+    x_(4, 0) = 0.0;
+    x_(5, 0) = 0.0;
+    init_true_position_ = true;
+
+    ROS_ERROR_STREAM("SENSOR FUSION " << robot_name << " Initial X " << init_x << " Initial Y " << init_y);
+
+  }
+
+
   last_x_=x_;
+
 }
 void SensorFusion::attitudeInitCallback_( const geometry_msgs::Quaternion::ConstPtr &msg){
   // if this robot already got true attitude from SRC2.  Do nothing. Just return
