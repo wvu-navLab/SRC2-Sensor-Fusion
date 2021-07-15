@@ -1,3 +1,21 @@
 odometry_child_frame_id : "_base_footprint"
 odometry_frame_id : "_odom"
 position_update_topic : "position_update"
+small_scout_1:
+  x: 10
+  y: 4
+small_scout_2:
+  x: 10
+  y: 8
+small_hauler_1:
+  x: 2
+  y: 4
+small_hauler_2:
+  x: 2
+  y: 8
+small_excavator_1:
+  x: 6
+  y: 4
+small_excavator_2:
+  x: 6
+  y: 8

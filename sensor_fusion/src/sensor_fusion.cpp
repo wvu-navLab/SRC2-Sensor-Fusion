@@ -11,6 +11,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
     exit(1);
   }
 
+
   if (ros::param::get(node_name + "/odometry_frame_id", odometry_frame_id) ==
       false) {
     ROS_FATAL("No parameter 'odometry_frame_id' specified");
@@ -33,6 +34,33 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
     ros::shutdown();
     exit(1);
   }
+  int position_parm_count =0;
+  std::string test = node_name +"/"+ robot_name + "/x";
+  ROS_ERROR_STREAM("NAME ---->" << test);
+  if (ros::param::get(node_name +"/"+ robot_name + "/x" , init_x) ==
+      false) {
+    ROS_FATAL("No parameter '<robot_name>/x' specified");
+    ros::shutdown();
+    exit(1);
+    position_parm_count = position_parm_count +1;
+  }
+  else
+  {
+  position_parm_count = position_parm_count +1;
+  }
+
+  if (ros::param::get(node_name +"/"+ robot_name + "/y" , init_y) ==
+      false) {
+    ROS_FATAL("No parameter '<robot_name>/x' specified");
+    ros::shutdown();
+    exit(1);
+
+  }
+  else
+  {
+  position_parm_count = position_parm_count +1;
+  }
+
   src2GetTruePoseClient_ =
       nh_.serviceClient<srcp2_msgs::LocalizationSrv>("get_true_pose");
   getTruePoseServer_ = nh_.advertiseService(
@@ -67,9 +95,12 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
 
   subDrivingMode_ = nh_.subscribe("driving/driving_mode", 1,
                                   &SensorFusion::drivingModeCallback_, this);
+  subPositionUpdate_ = nh_.subscribe(
+
+      position_update_topic, 1, &SensorFusion::positionUpdateCallback_, this);
 
   subPositionUpdate_ = nh_.subscribe(
-      position_update_topic, 1, &SensorFusion::positionUpdateCallback_, this);
+      "/initial_attitude", 1, &SensorFusion::attitudeInitCallback_, this);
 
   pubOdom_ = nh_.advertise<nav_msgs::Odometry>(
       "localization/odometry/sensor_fusion", 1);
@@ -82,6 +113,9 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
 
   pubSlip_ = nh_.advertise<geometry_msgs::PointStamped>(
       "localization/odometry/slip", 1);
+
+  pubInitAttitude_ = nh_.advertise<geometry_msgs::Quaternion>(
+          "/initial_attitude", 1);
 
   g_(0, 0) = 0.0;
   g_(1, 0) = 0.0;
@@ -121,9 +155,45 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
 
   x_ << 0, 0, 0, 0, 0, 0;
-  last_x_=x_;
-}
+  if(  position_parm_count == 2)
+  {
+    x_(0, 0) = init_x;
+    x_(1, 0) = init_y;
+    x_(2, 0) = 1.65;
+    x_(3, 0) = 0.0;
+    x_(4, 0) = 0.0;
+    x_(5, 0) = 0.0;
+    init_true_position_ = true;
 
+    ROS_ERROR_STREAM("SENSOR FUSION " << robot_name << " Initial X " << init_x << " Initial Y " << init_y);
+
+  }
+
+
+  last_x_=x_;
+
+}
+void SensorFusion::PublishInitAttitude()
+{
+        pubInitAttitude_.publish(q_msg);
+}
+void SensorFusion::attitudeInitCallback_( const geometry_msgs::Quaternion::ConstPtr &msg){
+  // if this robot already got true attitude from SRC2.  Do nothing. Just return
+  if(true_pose_from_src2 || init_true_pose_ )
+  {
+      return;
+  }
+  init_true_attitude_ = true;
+  if(init_true_position_ && init_true_attitude_)
+  {
+    init_true_pose_=true;
+  }
+  tf::Quaternion q(msg->x, msg->y, msg->z,
+                   msg->w);
+  tf::Matrix3x3 R_init_true_b_n(q);
+  R_imu_nav_o_ = R_init_true_b_n * R_body_imu_.transpose();
+
+}
 void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr &msg) {
   // std::cout << " IMU Callback " << std::endl;
   tf::Quaternion q(msg->orientation.x, msg->orientation.y, msg->orientation.z,
@@ -188,7 +258,7 @@ bool SensorFusion::getTruePoseFromSRC2_(
     sensor_fusion::GetTruePose::Response &res) {
 
   ROS_INFO(" Calling the SRC2 Get True Pose Service ");
-
+  true_pose_from_src2 = true;
   srcp2_msgs::LocalizationSrv srv;
   if (req.start) {
     srv.request.call = true;
@@ -198,6 +268,17 @@ bool SensorFusion::getTruePoseFromSRC2_(
 
       tf::Quaternion q(pose_.orientation.x, pose_.orientation.y,
                        pose_.orientation.z, pose_.orientation.w);
+
+      // if called to initialize, call topic to initialize others
+      if(req.initialize)
+      {
+          q_msg.x = q.x();
+          q_msg.y = q.y();
+          q_msg.z = q.z();
+          q_msg.w = q.w();
+          pubInitAttitude_.publish(q_msg);
+          have_init_attitude =true;
+      }
 
       tf::Matrix3x3 R_init_true_b_n(q);
       R_imu_nav_o_ = R_init_true_b_n * R_body_imu_.transpose();
@@ -322,8 +403,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg) {
     Rbn_ = R_imu_nav_o_ * R_body_imu_;
     vn_imu = Rbn_ * vb_wo;
 
-    x_ << pose_.position.x, pose_.position.y, pose_.position.z, vn_imu.x(),
-        vn_imu.y(), vn_imu.z();
+    x_(3,0)= vn_imu.x();
+    x_(4,0)= vn_imu.y();
+    x_(5,0)= vn_imu.z();
   }
 
   // std::cout <<"Wheel Odom Callback " << std::endl;
@@ -800,11 +882,19 @@ int main(int argc, char **argv) {
   SensorFusion localizer(nh);
 
   // ros::spin();
+  int counter =0;
   while (ros::ok()) {
 
     localizer.initializationStatus_();
     ros::spinOnce();
+    if(localizer.have_init_attitude && counter ==100)
+    {
+      localizer.PublishInitAttitude();
+      counter = 0;
+    }
     rate.sleep();
+    counter = counter +1;
+
   }
 
   return 0;
