@@ -46,7 +46,7 @@ public:
     void initializationStatus_();
     void PublishInitAttitude();
     bool have_init_attitude =false;
-    bool publish_attitude= false;
+
 
 private:
    bool averageAccel_;
