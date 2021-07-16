@@ -278,6 +278,7 @@ bool SensorFusion::getTruePoseFromSRC2_(
           q_msg.w = q.w();
           pubInitAttitude_.publish(q_msg);
           have_init_attitude =true;
+          publish_attitude = true;
       }
 
       tf::Matrix3x3 R_init_true_b_n(q);
@@ -887,7 +888,7 @@ int main(int argc, char **argv) {
 
     localizer.initializationStatus_();
     ros::spinOnce();
-    if(localizer.have_init_attitude && counter ==100)
+    if(localizer.have_init_attitude && localizer.publish_attitude && counter ==100)
     {
       localizer.PublishInitAttitude();
       counter = 0;
