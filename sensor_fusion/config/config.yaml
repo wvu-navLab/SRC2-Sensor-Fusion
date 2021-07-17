@@ -4,18 +4,24 @@ position_update_topic : "position_update"
 small_scout_1:
   x: 10
   y: 4
+  z: 1.65
 small_scout_2:
   x: 10
   y: 8
+  z: 1.65
 small_hauler_1:
   x: 2
   y: 4
+  z: 1.65
 small_hauler_2:
   x: 2
   y: 8
+  z: 1.65
 small_excavator_1:
   x: 6
   y: 4
+  z: 1.65
 small_excavator_2:
   x: 6
   y: 8
+  z: 1.65

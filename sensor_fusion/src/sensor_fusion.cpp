@@ -51,7 +51,19 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
 
   if (ros::param::get(node_name +"/"+ robot_name + "/y" , init_y) ==
       false) {
-    ROS_FATAL("No parameter '<robot_name>/x' specified");
+    ROS_FATAL("No parameter '<robot_name>/y' specified");
+    ros::shutdown();
+    exit(1);
+
+  }
+  else
+  {
+  position_parm_count = position_parm_count +1;
+  }
+
+  if (ros::param::get(node_name +"/"+ robot_name + "/z" , init_z) ==
+      false) {
+    ROS_FATAL("No parameter '<robot_name>/z' specified");
     ros::shutdown();
     exit(1);
 
@@ -159,7 +171,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
   {
     x_(0, 0) = init_x;
     x_(1, 0) = init_y;
-    x_(2, 0) = 1.65;
+    x_(2, 0) = init_z;
     x_(3, 0) = 0.0;
     x_(4, 0) = 0.0;
     x_(5, 0) = 0.0;
@@ -289,7 +301,6 @@ bool SensorFusion::getTruePoseFromSRC2_(
       x_(3, 0) = 0.0;
       x_(4, 0) = 0.0;
       x_(5, 0) = 0.0;
-      init_pos_z_= pose_.position.z;
       // also re-init P
       P_ = Q_;
       P_(0, 0) = 1e-3;
@@ -620,7 +631,7 @@ void SensorFusion::positionUpdateCallback_(
 
   zPosition_(0, 0) = x_[0] + msg->position.x;
   zPosition_(1, 0) = x_[1] + msg->position.y;
-  zPosition_(2, 0) = init_pos_z_;
+  zPosition_(2, 0) = init_z;
   // zPosition_(2, 0) = 0.0;
   zPosition_(3, 0) = 0.0;
   zPosition_(4, 0) = 0.0;
@@ -817,7 +828,7 @@ void SensorFusion::publishOdom_() {
   updatedOdom.pose.pose.position.x = x_(0);
   updatedOdom.pose.pose.position.y = x_(1);
   // updatedOdom.pose.pose.position.z = x_(2);
-  updatedOdom.pose.pose.position.z = init_pos_z_;
+  updatedOdom.pose.pose.position.z = init_z;
 
   updatedOdom.pose.pose.orientation.x = qup.x();
   updatedOdom.pose.pose.orientation.y = qup.y();

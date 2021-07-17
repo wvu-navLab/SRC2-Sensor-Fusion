@@ -101,9 +101,9 @@ private:
     ros::Subscriber subDrivingMode_;
     ros::Subscriber subInitAttitude_;
 
-    double init_pos_z_;
     double init_x;
     double init_y;
+    double init_z;
     double rollInc_;
     double pitchInc_;
     double yawInc_;
