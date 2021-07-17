@@ -167,7 +167,7 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
 
   x_ << 0, 0, 0, 0, 0, 0;
-  if(  position_parm_count == 2)
+  if(  position_parm_count == 3)
   {
     x_(0, 0) = init_x;
     x_(1, 0) = init_y;
