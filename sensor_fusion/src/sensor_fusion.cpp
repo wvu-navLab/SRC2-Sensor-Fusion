@@ -205,6 +205,22 @@ void SensorFusion::attitudeInitCallback_( const geometry_msgs::Quaternion::Const
   tf::Matrix3x3 R_init_true_b_n(q);
   R_imu_nav_o_ = R_init_true_b_n * R_body_imu_.transpose();
 
+  // Once attitude is corrected, we reset the positions
+  // to initial positions and set velocities to zero
+  x_(0, 0) = init_x;
+  x_(1, 0) = init_y;
+  x_(2, 0) = init_z;
+  x_(3, 0) = 0.0;
+  x_(4, 0) = 0.0;
+  x_(5, 0) = 0.0;
+  // also re-init P
+  P_ = Q_;
+  P_(0, 0) = 1e-3;
+  P_(1, 1) = 1e-3;
+  P_(2, 2) = 1e-3;
+  P_(3, 3) = 1e-1;
+  P_(4, 4) = 1e-1;
+  P_(5, 5) = 1e-1;
 }
 void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr &msg) {
   // std::cout << " IMU Callback " << std::endl;
