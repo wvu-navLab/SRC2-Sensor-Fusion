@@ -28,6 +28,7 @@
 #include <std_msgs/Int64.h>
 #include <tf/transform_broadcaster.h>
 //#include <kimera_vio_ros/KimeraVioRos.h>
+#include <sensor_fusion/ResetPosition.h>
 #include <sensor_fusion/GetTruePose.h>
 #include "srcp2_msgs/LocalizationSrv.h"
 #include <std_srvs/Trigger.h>
@@ -59,6 +60,8 @@ private:
     ros::ServiceClient src2GetTruePoseClient_;
 
     ros::ServiceServer getTruePoseServer_;
+    ros::ServiceServer resetPositionServer_;
+    bool resetPosition_(sensor_fusion::ResetPosition::Request &req, sensor_fusion::ResetPosition::Response &res);
     bool getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req, sensor_fusion::GetTruePose::Response &res);
     geometry_msgs::Quaternion q_msg;
     // initial global body to nav attitude, from truth

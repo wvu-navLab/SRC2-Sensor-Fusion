@@ -77,6 +77,9 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
       nh_.serviceClient<srcp2_msgs::LocalizationSrv>("get_true_pose");
   getTruePoseServer_ = nh_.advertiseService(
       "true_pose", &SensorFusion::getTruePoseFromSRC2_, this);
+
+  resetPositionServer_ = nh_.advertiseService(
+      "reset_position", &SensorFusion::resetPosition_, this);    
   // clt_restart_kimera_ =
   // nh.serviceClient<std_srvs::Trigger>("/kimera_vio_ros/kimera_vio_ros_node/restart_kimera_vio");
 
@@ -278,6 +281,28 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr &msg) {
   //%f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
 
+
+bool SensorFusion::resetPosition_(sensor_fusion::ResetPosition::Request &req, sensor_fusion::ResetPosition::Response &res)
+{
+  x_(0, 0) = req.new_position.x;
+  x_(1, 0) = req.new_position.y;
+  x_(2, 0) = init_z;
+  x_(3, 0) = 0.0;
+  x_(4, 0) = 0.0;
+  x_(5, 0) = 0.0;
+  // also re-init P
+  P_ = Q_;
+  P_(0, 0) = 1e-3;
+  P_(1, 1) = 1e-3;
+  P_(2, 2) = 1e-3;
+  P_(3, 3) = 1e-1;
+  P_(4, 4) = 1e-1;
+  P_(5, 5) = 1e-1;
+
+  res.success = true;
+  return true;
+
+}
 bool SensorFusion::getTruePoseFromSRC2_(
     sensor_fusion::GetTruePose::Request &req,
     sensor_fusion::GetTruePose::Response &res) {
