@@ -107,12 +107,9 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh) {
 
   subDrivingMode_ = nh_.subscribe("driving/driving_mode", 1,
                                   &SensorFusion::drivingModeCallback_, this);
-  subPositionUpdate_ = nh_.subscribe(
+  subPositionUpdate_ = nh_.subscribe(position_update_topic, 1, &SensorFusion::positionUpdateCallback_, this);
 
-      position_update_topic, 1, &SensorFusion::positionUpdateCallback_, this);
-
-  subPositionUpdate_ = nh_.subscribe(
-      "/initial_attitude", 1, &SensorFusion::attitudeInitCallback_, this);
+  subInitAttitude_ = nh_.subscribe("/initial_attitude", 1, &SensorFusion::attitudeInitCallback_, this);
 
   pubOdom_ = nh_.advertise<nav_msgs::Odometry>(
       "localization/odometry/sensor_fusion", 1);
