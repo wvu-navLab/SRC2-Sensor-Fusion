@@ -834,7 +834,7 @@ void SensorFusion::CheckForOutsideCrater(tf::Quaternion q)
 void SensorFusion::Brake()
 {
   srcp2_msgs::BrakeRoverSrv srv_brake;
-  srv_brake.request.brake_force  = 100.0;
+  srv_brake.request.brake_force  = 1000.0;
   if (clt_srcp2_brake_rover.call(srv_brake))
   {
 
@@ -842,7 +842,7 @@ void SensorFusion::Brake()
   }
   else
   {
-      ROS_ERROR_STREAM("[" << robot_name << "] " <<"Sensor Fusion. Failed to call service Brake");
+    ROS_ERROR_STREAM("[" << robot_name << "] " <<"Sensor Fusion. Failed to call service Brake");
   }
 }
 
