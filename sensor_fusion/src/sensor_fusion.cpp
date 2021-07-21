@@ -362,7 +362,8 @@ bool SensorFusion::getTruePoseFromSRC2_(
       P_(5, 5) = 1e-1;
       init_true_pose_ = true;
       res.success = true;
-
+      x_diff_=0.0;
+      y_diff_=0.0;
       return true;
     }
     else
@@ -578,7 +579,7 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg)
   Rbn_.getRPY(roll, pitch, yaw);
   if ((pitch * 180 / 3.1414926) > 60)
   {
-    ROS_WARN_STREAM_THROTTLE(10, "[" << robot_name << "] Sensor Fusion. Skipping Wheel Odom Update Pitch: " << 
+    ROS_WARN_STREAM_THROTTLE(10, "[" << robot_name << "] Sensor Fusion. Skipping Wheel Odom Update Pitch: " <<
                              pitch * 180 / 3.1414926);
     ROS_WARN_STREAM_THROTTLE(10, " WO Vel " << vb_wo_.x());
     ROS_WARN_STREAM_THROTTLE(10, " VO Vel " << vb_vo_.x());
@@ -717,8 +718,8 @@ void SensorFusion::positionUpdateCallback_(
   P_ = (I - K * Hposition_) * P_;
   x_ = x_ + K * (zPosition_ - Hposition_ * x_);
   homingUpdateFlag_ = true;
-  x_diff_ = 0;
-  y_diff_ = 0;
+  x_diff_ = 0.0;
+  y_diff_ = 0.0;
 }
 
 void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr &msg)
@@ -951,10 +952,10 @@ void SensorFusion::publishOdom_()
       slipped_x_ = x_(0);
       slipped_y_ = x_(1);
       x_diff_ = x_diff_ + slipped_x_ - temp_x_;
-      y_diff_ = x_diff_ + slipped_y_ - temp_y_;
+      y_diff_ = y_diff_ + slipped_y_ - temp_y_;
 
       ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. "
-                           << "Rover is possibly stuck!");
+                           << "High repetitive velocity anomalies between VO and WO! Checking for immobility...");
       ROS_INFO_STREAM("[" << robot_name << "] "
                           << "Accumulated x_diff: " << x_diff_);
       ROS_INFO_STREAM("[" << robot_name << "] "
@@ -970,7 +971,23 @@ void SensorFusion::publishOdom_()
       ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Frequent Slip Flag, slipCount_= " << slipCount_);
       temp_x_ = x_(0);
       temp_y_ = x_(1);
-
+      if (abs(x_diff_)> 2.0 || abs(y_diff_)> 2.0)
+      {
+        ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. "<< "Rover Slipped");
+        ROS_ERROR_STREAM("[" << robot_name << "] "<< "Accumulated x_diff: " << x_diff_);
+        ROS_ERROR_STREAM("[" << robot_name << "] "<< "Accumulated y_diff: " << y_diff_);
+        ROS_ERROR_STREAM("[" << robot_name << "] "<< "Current x: " << x_(0));
+        ROS_ERROR_STREAM("[" << robot_name << "] "<< "Current y: " << x_(1));
+      }
+      else
+      {
+        ROS_WARN_STREAM("[" << robot_name << "] Sensor Fusion. "<< "Rover Localization looks ok for now.");
+        ROS_INFO_STREAM("[" << robot_name << "] Sensor Fusion. "<< "Rover Localization looks ok for now.");
+        ROS_INFO_STREAM("[" << robot_name << "] "<< "Accumulated x_diff: " << x_diff_);
+        ROS_INFO_STREAM("[" << robot_name << "] "<< "Accumulated y_diff: " << y_diff_);
+        ROS_INFO_STREAM("[" << robot_name << "] "<< "Current x: " << x_(0));
+        ROS_INFO_STREAM("[" << robot_name << "] "<< "Current y: " << x_(1));
+      }
       // ROS_ERROR("Sending immobility flag to Mobility Checker");
     }
     // ROS_ERROR_STREAM("IMMOBILITY" << mobility_.data);
