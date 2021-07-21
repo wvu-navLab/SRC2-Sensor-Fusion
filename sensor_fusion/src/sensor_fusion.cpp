@@ -787,9 +787,9 @@ void SensorFusion::CheckForCollision()
 
   if (flag_collision_proc_plant || flag_collision_repair_station)
   {
-    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Detected that localization estimate"
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. Detected that localization estimate"
                          << " is in collision with either stations. Overwriting Sensor Fusion output.");
-    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Estimated (x,y): (" << x_[0] <<","<<x_[1]<<")");
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. Estimated (x,y): (" << x_[0] <<","<<x_[1]<<")");
     flag_in_collision_ = true;
   }
   else
