@@ -1,7 +1,6 @@
 #ifndef SENSOR_FUSION_H
 #define SENSOR_FUSION_H
 
-
 // Include cpp important headers
 #include <math.h>
 #include <stdio.h>
@@ -9,8 +8,6 @@
 #include <thread>
 #include <termios.h>
 #include <vector>
-
-
 
 // ROS headers
 #include <ros/ros.h>
@@ -30,6 +27,7 @@
 //#include <kimera_vio_ros/KimeraVioRos.h>
 #include <sensor_fusion/ResetPosition.h>
 #include <sensor_fusion/GetTruePose.h>
+#include <srcp2_msgs/BrakeRoverSrv.h>
 #include "srcp2_msgs/LocalizationSrv.h"
 #include <std_srvs/Trigger.h>
 #define INITIALIZED 1
@@ -37,27 +35,25 @@
 #define MOBILE 1
 #define IMMOBILE 0
 
-
-
 class SensorFusion
 {
 public:
-
     SensorFusion(ros::NodeHandle &);
     void initializationStatus_();
     void PublishInitAttitude();
-    bool have_init_attitude =false;
-
+    void CheckForCollision();
+    void CheckForOutsideCrater(tf::Quaternion q);
+    void Brake();
+    bool have_init_attitude = false;
 
 private:
-   bool averageAccel_;
-   double accelCount_;
-    ros::NodeHandle & nh_;
+    bool averageAccel_;
+    double accelCount_;
+    ros::NodeHandle &nh_;
 
     ros::Publisher pubOdom_, pubStatus_, pubSlip_, pubMobility_, pubInitAttitude_;
 
-
-    ros::ServiceClient src2GetTruePoseClient_;
+    ros::ServiceClient src2GetTruePoseClient_, clt_srcp2_brake_rover;
 
     ros::ServiceServer getTruePoseServer_;
     ros::ServiceServer resetPositionServer_;
@@ -72,9 +68,9 @@ private:
 
     tf::Matrix3x3 Rbn_;
     tf::Vector3 vb_wo_, vb_vo_;
-    Eigen::Matrix <double, 3, 1> vAccNav_;
-    Eigen::Matrix <double, 3, 1> accelIMU_;
-    Eigen::Matrix <double, 3, 1>  g_;
+    Eigen::Matrix<double, 3, 1> vAccNav_;
+    Eigen::Matrix<double, 3, 1> accelIMU_;
+    Eigen::Matrix<double, 3, 1> g_;
     // pose estimate, saved over time to integrate position
     geometry_msgs::Pose pose_;
 
@@ -84,11 +80,11 @@ private:
     bool init_true_pose_;
     bool init_true_position_;
     bool init_true_attitude_;
-    bool high_slip_flag_= false;
-    bool homingUpdateFlag_=false;
-    bool true_pose_from_src2 =false;
+    bool high_slip_flag_ = false;
+    bool homingUpdateFlag_ = false;
+    bool true_pose_from_src2 = false;
     int initialized_;
-    int slipCount_=0;
+    int slipCount_ = 0;
     std_msgs::Int64 status_;
     std_msgs::Int64 mobility_;
 
@@ -111,39 +107,39 @@ private:
     double pitchInc_;
     double yawInc_;
     double incCounter_;
-    double slipTimer =0;
-    double yawTimer=0;
-    double yaw_pre=0;
-    double distDiff=0;
-    double distNow=0;
-    double distPrev=0;
+    double slipTimer = 0;
+    double yawTimer = 0;
+    double yaw_pre = 0;
+    double distDiff = 0;
+    double distNow = 0;
+    double distPrev = 0;
     double temp_x_;
     double temp_y_;
     double slipped_x_;
     double slipped_y_;
     double x_diff_;
     double y_diff_;
-    void voCallback_(const nav_msgs::Odometry::ConstPtr& msg);
-    void imuCallback_(const sensor_msgs::Imu::ConstPtr& msg);
-    void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr& msg);
-    void positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr& msg);
-    void drivingModeCallback_(const std_msgs::Int64::ConstPtr& msg);
-    void attitudeInitCallback_(const geometry_msgs::Quaternion::ConstPtr& msg);
+    void voCallback_(const nav_msgs::Odometry::ConstPtr &msg);
+    void imuCallback_(const sensor_msgs::Imu::ConstPtr &msg);
+    void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg);
+    void positionUpdateCallback_(const geometry_msgs::Pose::ConstPtr &msg);
+    void drivingModeCallback_(const std_msgs::Int64::ConstPtr &msg);
+    void attitudeInitCallback_(const geometry_msgs::Quaternion::ConstPtr &msg);
 
-    Eigen::Matrix <double, 6, 1> x_;
-    Eigen::Matrix <double, 6, 1> last_x_;
-    Eigen::Matrix <double, 6, 6> P_;
-    Eigen::Matrix <double, 6, 6> Q_;
-    Eigen::Matrix <double, 3, 3> Rwo_;
-    Eigen::Matrix <double, 3, 3> Rvo_;
-    Eigen::Matrix <double, 3, 6> Hodom_;
-    Eigen::Matrix <double, 6, 6> F_;
-    Eigen::Matrix <double, 3,1> zVO_;
-    Eigen::Matrix <double, 3,1> zWO_;
+    Eigen::Matrix<double, 6, 1> x_;
+    Eigen::Matrix<double, 6, 1> last_x_;
+    Eigen::Matrix<double, 6, 6> P_;
+    Eigen::Matrix<double, 6, 6> Q_;
+    Eigen::Matrix<double, 3, 3> Rwo_;
+    Eigen::Matrix<double, 3, 3> Rvo_;
+    Eigen::Matrix<double, 3, 6> Hodom_;
+    Eigen::Matrix<double, 6, 6> F_;
+    Eigen::Matrix<double, 3, 1> zVO_;
+    Eigen::Matrix<double, 3, 1> zWO_;
 
-    Eigen::Matrix <double, 6, 6> Hposition_;
-    Eigen::Matrix <double, 6, 1> zPosition_;
-    Eigen::Matrix <double, 6, 6> Rposition_;
+    Eigen::Matrix<double, 6, 6> Hposition_;
+    Eigen::Matrix<double, 6, 1> zPosition_;
+    Eigen::Matrix<double, 6, 6> Rposition_;
 
     void publishOdom_();
     int driving_mode_;
@@ -160,8 +156,14 @@ private:
 
     ros::ServiceClient clt_restart_kimera_;
 
+    double x_proc_plant_ = -6;
+    double y_proc_plant_ = 7;
+    double x_repair_station_ = -6;
+    double y_repair_station_ = -6;
 
-
- };
+    bool flag_in_collision_ = false;
+    double last_safe_x_ = 0;
+    double last_safe_y_ = 0;
+};
 
 #endif

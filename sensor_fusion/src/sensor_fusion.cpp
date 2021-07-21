@@ -134,6 +134,8 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh)
   pubInitAttitude_ = nh_.advertise<geometry_msgs::Quaternion>(
       "/initial_attitude", 1);
 
+  clt_srcp2_brake_rover= nh_.serviceClient<srcp2_msgs::BrakeRoverSrv>("brake_rover");
+
   g_(0, 0) = 0.0;
   g_(1, 0) = 0.0;
   g_(2, 0) = -1.62;
@@ -773,6 +775,77 @@ void SensorFusion::voCallback_(const nav_msgs::Odometry::ConstPtr &msg)
   // vb_vo_=Rbn_.transpose()*vn_vo_;
 }
 
+void SensorFusion::CheckForCollision()
+{
+
+
+  double D_proc_plant = hypot(x_proc_plant_ - x_[0], y_proc_plant_ - x_[1]);
+  bool flag_collision_proc_plant = D_proc_plant < 4.2;
+
+  double D_repair_station = hypot(x_repair_station_ - x_[0], y_repair_station_ - x_[1]);
+  bool flag_collision_repair_station = D_repair_station < 4.2;
+
+  if (flag_collision_proc_plant || flag_collision_repair_station)
+  {
+    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Detected that localization estimate"
+                         << " is in collision with either stations. Overwriting Sensor Fusion output.");
+    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Estimated (x,y): (" << x_[0] <<","<<x_[1]<<")");
+    flag_in_collision_ = true;
+  }
+  else
+  {
+    flag_in_collision_ = false;
+    last_safe_x_ = x_[0];
+    last_safe_y_ = x_[1];
+  }
+}
+
+void SensorFusion::CheckForOutsideCrater(tf::Quaternion q)
+{
+  tf::Matrix3x3 m(q);
+
+  double roll, pitch, yaw;
+  m.getRPY(roll, pitch, yaw);
+
+  double D_crater_center = hypot(x_[0],x_[1]);
+  bool flag_edge_crater = D_crater_center > 85;
+  bool flag_high_pitch = false;
+  bool flag_high_roll = false;
+
+  if (abs(pitch * 180 / M_PI) > 27.5)
+  {
+    flag_high_pitch = true;
+  }
+
+  if (abs(roll * 180 / M_PI) > 27.5)
+  {
+    flag_high_roll = true;
+  }
+
+  if (flag_edge_crater && (flag_high_pitch || flag_high_roll))
+  {
+    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Detected that localization estimate is outside the big crater. Braking forever.");
+    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Estimated (x,y): (" << x_[0] <<","<<x_[1]<<")");
+    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Mission complete. Your job is to sit there.");
+    Brake();
+  }
+}
+
+void SensorFusion::Brake()
+{
+  srcp2_msgs::BrakeRoverSrv srv_brake;
+  srv_brake.request.brake_force  = 100.0;
+  if (clt_srcp2_brake_rover.call(srv_brake))
+  {
+
+    ROS_INFO_STREAM("[" << robot_name << "] " <<"Sensor Fusion. Called service SRCP2 Brake.");
+  }
+  else
+  {
+      ROS_ERROR_STREAM("[" << robot_name << "] " <<"Sensor Fusion. Failed to call service Brake");
+  }
+}
+
 void SensorFusion::initializationStatus_()
 {
   // std_msgs::Int64 status;
@@ -931,6 +1004,14 @@ void SensorFusion::publishOdom_()
   updatedOdom.pose.covariance[0] = P_(0, 0);
   updatedOdom.pose.covariance[1] = P_(1, 1);
 
+  CheckForCollision();
+
+  if(flag_in_collision_)
+  {
+    updatedOdom.pose.pose.position.x = last_safe_x_;
+    updatedOdom.pose.pose.position.y = last_safe_y_;
+  }
+
   pubOdom_.publish(updatedOdom);
   pubSlip_.publish(slip);
   pose_ = updatedOdom.pose.pose;
@@ -966,6 +1047,8 @@ void SensorFusion::publishOdom_()
   // ROS_ERROR_STREAM("DistPrev???: " << distPrev);
   // ROS_ERROR_STREAM("DistNow???: " << distNow);
   // ROS_ERROR_STREAM("DistDiff???: " << distDiff);
+
+  CheckForOutsideCrater(qup);
 }
 
 int main(int argc, char **argv)
