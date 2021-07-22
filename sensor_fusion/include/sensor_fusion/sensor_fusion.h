@@ -60,7 +60,7 @@ private:
     bool resetPosition_(sensor_fusion::ResetPosition::Request &req, sensor_fusion::ResetPosition::Response &res);
     bool getTruePoseFromSRC2_(sensor_fusion::GetTruePose::Request &req, sensor_fusion::GetTruePose::Response &res);
     geometry_msgs::Quaternion q_msg;
-    // initial global body to nav attitude, from truth
+    // initial global body to nav attitude, from provided service
     tf::Matrix3x3 R_imu_nav_o_;
 
     //relative attitude from quaternion in imu topic
@@ -119,6 +119,9 @@ private:
     double slipped_y_;
     double x_diff_;
     double y_diff_;
+    double p_;
+    double q_;
+    double r_;
     void voCallback_(const nav_msgs::Odometry::ConstPtr &msg);
     void imuCallback_(const sensor_msgs::Imu::ConstPtr &msg);
     void wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg);
@@ -164,6 +167,7 @@ private:
     bool flag_in_collision_ = false;
     double last_safe_x_ = 0;
     double last_safe_y_ = 0;
+    
 };
 
 #endif

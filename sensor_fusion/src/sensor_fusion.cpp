@@ -290,6 +290,10 @@ void SensorFusion::imuCallback_(const sensor_msgs::Imu::ConstPtr &msg)
     accelIMU_(1, 0) = msg->linear_acceleration.y;
     accelIMU_(2, 0) = msg->linear_acceleration.z;
   }
+
+  p_ = msg->angular_velocity.x;
+  q_ = msg->angular_velocity.y;
+  r_ = msg->angular_velocity.z;
   //	ROS_INFO("RPY %f  %f
   //%f\n",roll*180.0/3.14,pitch*180.0/3.14,yaw*180.0/3.14);
 }
@@ -1015,8 +1019,9 @@ void SensorFusion::publishOdom_()
   tf::Vector3 v_nav_ekf(x_[3], x_[4], x_[5]);
   v_body_ekf = Rbn_.transpose() * v_nav_ekf;
   updatedOdom.twist.twist.linear.x = v_body_ekf.x();
-  updatedOdom.twist.twist.linear.y = v_body_ekf.y();
-  updatedOdom.twist.twist.linear.z = v_body_ekf.z();
+  // updatedOdom.twist.twist.linear.y = v_body_ekf.y();
+  // updatedOdom.twist.twist.linear.z = v_body_ekf.z();
+  updatedOdom.twist.twist.angular.z = r_;
 
   updatedOdom.pose.covariance[0] = P_(0, 0);
   updatedOdom.pose.covariance[1] = P_(1, 1);
