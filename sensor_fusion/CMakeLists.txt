@@ -65,6 +65,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    HomingUpdate.srv
+   HomingUpdateProcessingPlant.srv
    RoverStatic.srv
    GetTruePose.srv
    SetBaseLocation.srv

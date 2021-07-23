@@ -1,2 +1,4 @@
-base_x: -6.0 
+base_x: -6.0
 base_y: -6.0
+processing_x: -6.0
+processing_y: 7.0
