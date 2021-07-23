@@ -1,0 +1,5 @@
+bool initializeLandmark
+float64 angle
+---
+bool success
+geometry_msgs/Point processing_plant_location
