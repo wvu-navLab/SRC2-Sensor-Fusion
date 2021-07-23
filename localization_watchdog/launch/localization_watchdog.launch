@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node pkg="localization_watchdog" name="localization_watchdog" type="localization_watchdog" output="screen">
+    <rosparam command="load" file="$(find localization_watchdog)/config/params.yaml" subst_value="true"/>
+  </node>
+
+</launch>
