@@ -12,8 +12,8 @@ LocalizationWatchdog::LocalizationWatchdog(ros::NodeHandle &nh) : nh_(nh)
   }
 
   sub_imu = nh_.subscribe("imu_filtered", 1, &LocalizationWatchdog::imuCallback, this);
-  sub_vo = nh_.subscribe("vo", 1, &LocalizationWatchdog::voCallback, this);
-  sub_wo = nh_.subscribe("dead_reckoning/odometry", 1, &LocalizationWatchdog::woCallback, this);
+  sub_vo = nh_.subscribe("localization/odometry/vo", 1, &LocalizationWatchdog::voCallback, this);
+  sub_wo = nh_.subscribe("localization/odometry/dead_reckoning", 1, &LocalizationWatchdog::woCallback, this);
   sub_cmd_vel = nh_.subscribe("driving/cmd_vel", 1, &LocalizationWatchdog::cmdVelCallback, this);
   sub_joint_states = nh_.subscribe("joint_states", 1, &LocalizationWatchdog::jointStateCallback, this);
   sub_odometry = nh_.subscribe("localization/odometry/sensor_fusion", 1, &LocalizationWatchdog::odometryCallback, this);

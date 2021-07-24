@@ -31,6 +31,7 @@
 // Custom message includes. Auto-generated from msg/ directory.
 #include <sensor_msgs/Imu.h>
 #include <geometry_msgs/Twist.h>
+#include <sensor_msgs/JointState.h>
 
 class ImuAvgVelocity
 {
@@ -43,17 +44,25 @@ private:
     ros::NodeHandle & nh_;
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+    void jointStatesCallback(const sensor_msgs::JointState::ConstPtr& msg);
 
     ros::Subscriber sub_imu;
+    ros::Subscriber sub_joint_states;
 
     ros::Publisher pub_twist;
 
     std::vector<sensor_msgs::Imu> imu_msgs_;
+    
+    double avg_vx_ = 0.0;
+    double avg_vy_ = 0.0;
+    double avg_vz_ = 0.0;
 
     const int SET_SIZE = 50;
     const double imu_dt_ = 0.01;
 
     const double MOON_GRAVITY = 1.625;
+
+    int counter = 0;
  };
 
 #endif //IMU_AVG_VELOCITY_H
