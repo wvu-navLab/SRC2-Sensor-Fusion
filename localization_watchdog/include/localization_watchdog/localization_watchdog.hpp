@@ -20,6 +20,7 @@
 #include <geometry_msgs/Quaternion.h>
 #include <nav_msgs/Odometry.h>
 #include <localization_watchdog/WatchdogStatus.h>
+#include <driving_control/EnableDriving.h>
 
 class LocalizationWatchdog
 {
@@ -40,12 +41,16 @@ private:
   ros::Subscriber sub_joint_states;
   ros::Subscriber sub_odometry;
 
+  ros::ServiceClient clt_enable_driving;
+
   void imuCallback(const sensor_msgs::Imu::ConstPtr &msg);
   void voCallback(const nav_msgs::Odometry::ConstPtr &msg);
   void woCallback(const nav_msgs::Odometry::ConstPtr &msg);
   void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
   void jointStateCallback(const sensor_msgs::JointState::ConstPtr &msg);
   void odometryCallback(const nav_msgs::Odometry::ConstPtr &msg);
+
+  void ToggleDriving(bool enable);
 
   std::string robot_name_;
 

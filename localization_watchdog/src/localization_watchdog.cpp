@@ -19,6 +19,9 @@ LocalizationWatchdog::LocalizationWatchdog(ros::NodeHandle &nh) : nh_(nh)
   sub_odometry = nh_.subscribe("localization/odometry/sensor_fusion", 1, &LocalizationWatchdog::odometryCallback, this);
 
   pub_watchdog = nh_.advertise<localization_watchdog::WatchdogStatus>("localization/watchdog", 1);
+    
+  clt_enable_driving = nh_.serviceClient<driving_control::EnableDriving>("driving/enable");
+
 }
 
 void LocalizationWatchdog::imuCallback(const sensor_msgs::Imu::ConstPtr &msg)
@@ -126,13 +129,28 @@ void LocalizationWatchdog::WatchdogPublisher()
 
   if (watchdog_msg_.wasted.data)
   {
-    ROS_ERROR_STREAM("I'M WASTED!");
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name_ << "] WATCHDOG. I'M WASTED!");
   }
   if (watchdog_msg_.immobile.data)
   {
-    ROS_ERROR_STREAM("I'M IMMOBILE!");
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name_ << "] WATCHDOG. I'M IMMOBILE!");
   }
   pub_watchdog.publish(watchdog_msg_);
+}
+
+void LocalizationWatchdog::ToggleDriving(bool enable)
+{
+  // Update SF with True Pose
+  driving_control::EnableDriving srv_enable_driving;
+  srv_enable_driving.request.enable = enable;
+  if (clt_enable_driving.call(srv_enable_driving))
+  {
+    ROS_INFO_STREAM("[" << robot_name_ << "] WATCHDOG. Called service TruePose");
+  }
+  else
+  {
+    ROS_ERROR_STREAM("[" << robot_name_ << "] WATCHDOG. Failed to call Pose Update service");
+  }
 }
 
 int main(int argc, char **argv)
