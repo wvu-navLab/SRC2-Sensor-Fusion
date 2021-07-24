@@ -1,0 +1,9 @@
+<launch>
+    <group ns = "small_scout_1">
+        <node pkg="sensor_fusion"
+            name="imu_avg_velocity"
+            type="imu_avg_velocity"
+            output="screen">
+        </node>
+    </group>
+</launch>

@@ -105,12 +105,12 @@ SensorFusion::SensorFusion(ros::NodeHandle &nh) : nh_(nh)
 
   // initialized_=NOT_INITIALIZED;
 
-  subVO_ = nh_.subscribe("vo", 1, &SensorFusion::voCallback_, this);
+  subVO_ = nh_.subscribe("localization/odometry/vo", 1, &SensorFusion::voCallback_, this);
 
   subImu_ = nh_.subscribe("imu_filtered", 10, &SensorFusion::imuCallback_,
                           this); // Robot namespace here
 
-  subWheelOdom_ = nh_.subscribe("dead_reckoning/odometry", 1,
+  subWheelOdom_ = nh_.subscribe("localization/odometry/dead_reckoning", 1,
                                 &SensorFusion::wheelOdomCallback_, this);
 
   subDrivingMode_ = nh_.subscribe("driving/driving_mode", 1,

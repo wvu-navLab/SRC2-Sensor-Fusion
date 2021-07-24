@@ -153,16 +153,20 @@ include_directories(
 
 add_executable(sensor_fusion src/sensor_fusion.cpp)
 target_link_libraries(sensor_fusion ${catkin_LIBRARIES})
-add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp)
+add_dependencies(sensor_fusion sensor_fusion_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(kf_attitude_gyro src/kf_attitude_gyro.cpp)
 target_link_libraries(kf_attitude_gyro ${catkin_LIBRARIES})
-add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp)
+add_dependencies(kf_attitude_gyro sensor_fusion_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
+add_executable(imu_avg_velocity src/imu_avg_velocity.cpp)
+target_link_libraries(imu_avg_velocity ${catkin_LIBRARIES})
+add_dependencies(imu_avg_velocity sensor_fusion_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 
 add_executable(homing_update src/homing_update.cpp)
 target_link_libraries(homing_update ${catkin_LIBRARIES})
 add_dependencies(homing_update sensor_fusion_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -179,6 +183,18 @@ add_dependencies(homing_update sensor_fusion_generate_messages_cpp ${catkin_EXPO
 # )
 
 target_link_libraries(sensor_fusion
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(kf_attitude_gyro
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(imu_avg_velocity
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(homing_update
   ${catkin_LIBRARIES}
 )
 
@@ -225,16 +241,16 @@ install(DIRECTORY include/${PROJECT_NAME}/
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-install(TARGETS ${PROJECT_NAME} kf_attitude_gyro homing_update
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
- )
+install(TARGETS ${PROJECT_NAME} sensor_fusion kf_attitude_gyro homing_update imu_avg_velocity
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 install(DIRECTORY launch/
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
    PATTERN ".svn" EXCLUDE)
 
-   install(DIRECTORY config/
-       DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
-       PATTERN ".svn" EXCLUDE)
+install(DIRECTORY config/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+    PATTERN ".svn" EXCLUDE)
 #############
 ## Testing ##
 #############
