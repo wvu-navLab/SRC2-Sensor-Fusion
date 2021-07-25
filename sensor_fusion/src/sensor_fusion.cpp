@@ -599,9 +599,9 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg)
       ROS_WARN_STREAM_THROTTLE(10, "[" << robot_name << "] Sensor Fusion. VO Vel " << vb_vo_.x());
       if ((pitch * 180 / 3.1414926) < -35)
       {
-        ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Robot Cant Climb! Pitch: " <<
+        ROS_ERROR_STREAM_THROTTLE(0.1,"[" << robot_name << "] Sensor Fusion. Robot Cant Climb! Pitch: " <<
                          pitch * 180 / 3.1414926);
-        ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. SENDING IMMOBILITY FLAG TO MOBILE CHEcKER");
+        ROS_ERROR_STREAM_THROTTLE(0.1,"[" << robot_name << "] Sensor Fusion. SENDING IMMOBILITY FLAG TO MOBILE CHEcKER");
         mobility_.data = IMMOBILE;
         pubMobility_.publish(mobility_);
       }
@@ -681,10 +681,10 @@ void SensorFusion::wheelOdomCallback_(const nav_msgs::Odometry::ConstPtr &msg)
 
   if ((fabs(lastTime_wo_.toSec() - lastTime_vo_.toSec()) > 30) && !firstVO_)
   {
-    ROS_INFO_STREAM("[" << robot_name << "] Sensor Fusion. VO NODE FAIL!? ");
-    ROS_INFO_STREAM("[" << robot_name << "] Sensor Fusion. lastTime_wo " << lastTime_wo_.toSec());
-    ROS_INFO_STREAM("[" << robot_name << "] Sensor Fusion. lastTime_vio " << lastTime_vo_.toSec());
-    ROS_INFO_STREAM("[" << robot_name << "] Sensor Fusion. dt" << fabs(lastTime_wo_.toSec() - lastTime_vo_.toSec()));
+    ROS_INFO_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. VO NODE FAIL!? ");
+    ROS_INFO_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. lastTime_wo " << lastTime_wo_.toSec());
+    ROS_INFO_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. lastTime_vio " << lastTime_vo_.toSec());
+    ROS_INFO_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. dt" << fabs(lastTime_wo_.toSec() - lastTime_vo_.toSec()));
     std_srvs::Trigger trig;
     clt_restart_kimera_.call(trig);
     lastTime_vo_ = msg->header.stamp;

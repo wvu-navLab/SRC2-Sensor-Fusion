@@ -297,7 +297,7 @@ void LocalizationWatchdog::WatchdogPublisher()
   watchdog_msg_.slip_f_steer_cmd = slip_f_steer_cmd;
   watchdog_msg_.indicator = indicator;
 
-  ROS_INFO_STREAM("[" << robot_name_ << "] WATCHDOG. Immobility indicator: " << indicator);
+  // ROS_INFO_STREAM("[" << robot_name_ << "] WATCHDOG. Immobility indicator: " << indicator);
   // -----------------------------------------------------------------------
 
   if (watchdog_msg_.wasted.data)
