@@ -2,7 +2,7 @@
 
 <launch>
 
-  <node pkg="localization_watchdog" name="localization_watchdog" type="localization_watchdog" output="screen">
+  <node pkg="localization_watchdog" name="localization_watchdog" type="localization_watchdog" output="screen" launch-prefix="xterm -e">
     <rosparam command="load" file="$(find localization_watchdog)/config/params.yaml" subst_value="true"/>
   </node>
 

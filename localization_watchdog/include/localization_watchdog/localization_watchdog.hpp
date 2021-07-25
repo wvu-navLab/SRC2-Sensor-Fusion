@@ -21,6 +21,7 @@
 #include <nav_msgs/Odometry.h>
 #include <localization_watchdog/WatchdogStatus.h>
 #include <driving_control/EnableDriving.h>
+#include <motion_control/SteeringGroup.h>
 
 class LocalizationWatchdog
 {
@@ -38,6 +39,7 @@ private:
   ros::Subscriber sub_vo;
   ros::Subscriber sub_wo;
   ros::Subscriber sub_cmd_vel;
+  ros::Subscriber sub_cmd_steering;
   ros::Subscriber sub_joint_states;
   ros::Subscriber sub_odometry;
 
@@ -47,6 +49,7 @@ private:
   void voCallback(const nav_msgs::Odometry::ConstPtr &msg);
   void woCallback(const nav_msgs::Odometry::ConstPtr &msg);
   void cmdVelCallback(const geometry_msgs::Twist::ConstPtr &msg);
+  void cmdSteeringCallback(const motion_control::SteeringGroup::ConstPtr &msg);
   void jointStateCallback(const sensor_msgs::JointState::ConstPtr &msg);
   void odometryCallback(const nav_msgs::Odometry::ConstPtr &msg);
 
@@ -54,10 +57,17 @@ private:
 
   std::string robot_name_;
 
-  sensor_msgs::Imu imu_msg_;
+  std::vector<sensor_msgs::Imu> imu_msgs_;
   double roll_curr_;
   double pitch_curr_;
   double yaw_curr_;
+  double avg_p_;
+  double avg_q_;
+  double avg_r_;
+  double imu_vx_;
+  double imu_vy_;
+  double imu_vz_;
+  int batch_counter;
 
   nav_msgs::Odometry vo_msg_; 
   double vo_vx_;
@@ -83,15 +93,33 @@ private:
   bool flag_cmd_vy_;
   bool flag_cmd_wz_;
 
+  motion_control::SteeringGroup cmd_steer_msg_; 
+  double fl_steering_cmd_;
+  double bl_steering_cmd_;
+  double fr_steering_cmd_;
+  double br_steering_cmd_;
+
   sensor_msgs::JointState joint_state_msg_;
-  double steering_fl_curr_;
-  double steering_bl_curr_;
-  double steering_fr_curr_;
-  double steering_br_curr_;
+  double fl_steering_curr_;
+  double bl_steering_curr_;
+  double fr_steering_curr_;
+  double br_steering_curr_;
+  double fl_wheel_vels_curr_;
+  double bl_wheel_vels_curr_;
+  double fr_wheel_vels_curr_;
+  double br_wheel_vels_curr_;
 
   nav_msgs::Odometry odom_msg_;
 
   localization_watchdog::WatchdogStatus watchdog_msg_;
+
+  // Constants
+  const int SET_SIZE = 50;
+  const double MOON_GRAVITY = 1.62;
+  const double imu_dt_ = 0.01;
+
+  std::vector<double> indicator_vector;
+  double immobility_threshold = 1.0;
 };
 
 #endif //LOCALIZATION_WATCHDOG_H

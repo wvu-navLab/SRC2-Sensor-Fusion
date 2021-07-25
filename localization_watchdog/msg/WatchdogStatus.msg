@@ -1,2 +1,14 @@
 std_msgs/Bool wasted
 std_msgs/Bool immobile 
+float64 slip_wo_vo_x
+float64 slip_wo_vo_y
+float64 slip_wo_cmd_x
+float64 slip_wo_cmd_y
+float64 slip_vo_cmd_x
+float64 slip_vo_cmd_y
+float64 slip_imu_cmd_x
+float64 slip_imu_cmd_y
+float64 slip_imu_cmd_r
+float64 slip_b_steer_cmd
+float64 slip_f_steer_cmd
+float64 indicator

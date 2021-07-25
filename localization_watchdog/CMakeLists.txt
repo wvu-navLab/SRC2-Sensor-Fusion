@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   tf
   driving_control
+  motion_control
 )
 
 ## System dependencies are found with CMake's conventions
@@ -111,7 +112,7 @@ generate_messages(
 catkin_package(
  INCLUDE_DIRS include
 #  LIBRARIES localization_watchdog
- CATKIN_DEPENDS geometry_msgs message_generation message_runtime nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf driving_control
+ CATKIN_DEPENDS geometry_msgs message_generation message_runtime nav_msgs roscpp rospy sensor_msgs std_msgs std_srvs tf driving_control motion_control
 #  DEPENDS system_lib
 )
 
