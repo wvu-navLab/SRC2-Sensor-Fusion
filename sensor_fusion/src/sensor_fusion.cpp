@@ -829,9 +829,9 @@ void SensorFusion::CheckForOutsideCrater(tf::Quaternion q)
 
   if (flag_edge_crater && (flag_high_pitch || flag_high_roll))
   {
-    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Detected that localization estimate is outside the big crater. Braking forever.");
-    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Estimated (x,y): (" << x_[0] <<","<<x_[1]<<")");
-    ROS_ERROR_STREAM("[" << robot_name << "] Sensor Fusion. Mission complete. Your job is to sit there.");
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. Detected that localization estimate is outside the big crater. Braking forever.");
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. Estimated (x,y): (" << x_[0] <<","<<x_[1]<<")");
+    ROS_ERROR_STREAM_THROTTLE(5,"[" << robot_name << "] Sensor Fusion. Mission complete. Your job is to sit there.");
     Brake();
   }
 }
