@@ -261,16 +261,33 @@ void LocalizationWatchdog::WatchdogPublisher()
     {
       temp = 1.0;
     }
+    else if (slip_wo_cmd_x>0.6 && slip_vo_cmd_x>0.8 && slip_b_steer_cmd > 0.49 )
+    {
+      temp = 1.0;
+    }
+
+    else if (slip_wo_cmd_x>0.6 && slip_b_steer_cmd > 0.49 )
+    {
+      temp = 1.0;
+    }
+    // else if (slip_wo_cmd_y>0.8 && slip_vo_cmd_x>0.8 && slip_b_steer_cmd > 0.49 )
+    // {
+    //   temp = 10.0;
+    // }
+    else if (slip_b_steer_cmd - slip_f_steer_cmd> 0.4)
+    {
+      temp = 1.0;
+    }
     else
     {
       temp = 0.0;
     }
-    
+
     indicator_vector.push_back(temp);
     for (auto &i : indicator_vector)
     {
       indicator += i;
-    } 
+    }
   }
   else
   {
@@ -284,7 +301,7 @@ void LocalizationWatchdog::WatchdogPublisher()
     ROS_INFO_STREAM_THROTTLE(0.1,"[" << robot_name_ << "] WATCHDOG. Immobility indicator: " << indicator);
     watchdog_msg_.immobile.data = true;
   }
-  
+
   watchdog_msg_.slip_wo_vo_x = slip_wo_vo_x;
   watchdog_msg_.slip_wo_vo_y = slip_wo_vo_y;
   watchdog_msg_.slip_wo_cmd_x = slip_wo_cmd_x;
