@@ -92,9 +92,9 @@ void LocalizationWatchdog::voCallback(const nav_msgs::Odometry::ConstPtr &msg)
   vo_vx_ = msg->twist.twist.linear.x;
   vo_vy_ = msg->twist.twist.linear.y;
   vo_wz_ = msg->twist.twist.angular.z;
-  flag_vo_vx_ = (fabs(vo_vx_) > 0.010);
-  flag_vo_vy_ = (fabs(vo_vy_) > 0.010);
-  flag_vo_wz_ = (fabs(vo_wz_) > 0.010);
+  flag_vo_vx_ = (fabs(vo_vx_) > 0.10); //0.1
+  flag_vo_vy_ = (fabs(vo_vy_) > 0.10);
+  flag_vo_wz_ = (fabs(vo_wz_) > 0.10);
 }
 
 void LocalizationWatchdog::woCallback(const nav_msgs::Odometry::ConstPtr &msg)
@@ -253,22 +253,22 @@ void LocalizationWatchdog::WatchdogPublisher()
   {
     indicator_vector.erase(indicator_vector.begin());
 
-    if(flag_cmd_vx_ && !flag_vo_vy_ && !flag_vo_vx_ && (fabs(wo_vy_)>fabs(vo_vx_))) // cagri's magical condition
+    if(flag_cmd_vx_ && !flag_vo_vy_ && !flag_vo_vx_ && (fabs(wo_vy_)>fabs(vo_vx_)) && fabs(wo_vy_)>0.2 )
     {
       temp = 1.0;
     }
-    else if (flag_cmd_vx_ && !flag_vo_vy_ && !flag_vo_vx_)
-    {
-      temp = 1.0;
-    }
+    // else if (flag_cmd_vx_ && !flag_vo_vy_ && !flag_vo_vx_)
+    // {
+    //   temp = 1.0;
+    // }
     else if (slip_wo_cmd_x>0.6 && slip_vo_cmd_x>0.8 && slip_b_steer_cmd > 0.49 )
     {
-      temp = 1.0;
+      temp = 1.0; // More weight?
     }
 
     else if (slip_wo_cmd_x>0.6 && slip_b_steer_cmd > 0.49 )
     {
-      temp = 1.0;
+      temp = 1.0; // More weight?
     }
     // else if (slip_wo_cmd_y>0.8 && slip_vo_cmd_x>0.8 && slip_b_steer_cmd > 0.49 )
     // {
